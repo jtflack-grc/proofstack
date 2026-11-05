@@ -49,6 +49,18 @@ Synthetic evidence may be served from the repo during development and mirrored t
 
 The default provider is `mock`, so no API key is required for local development.
 
+## NVIDIA readiness check
+
+ProofStack uses NVIDIA's OpenAI-compatible chat-completions interface. Model choice is intentionally environment-driven because event/account availability can change.
+
+1. Export `NVIDIA_API_KEY`.
+2. Run `python scripts/check_nvidia.py` to list model IDs visible to that credential.
+3. Set `NVIDIA_MODEL` to a confirmed model ID.
+4. Run `python scripts/check_nvidia.py --smoke` to execute one synthetic assessment.
+5. Set `PROOFSTACK_PROVIDER=nvidia` before launching the app.
+
+The smoke test uses synthetic data only. Never paste real questionnaire evidence, participant information, or secrets into a hosted inference endpoint unless the project has explicitly approved that data path.
+
 ## Configuration
 
 Copy `.env.example` to your local environment or export variables in your shell.
@@ -57,6 +69,9 @@ Copy `.env.example` to your local environment or export variables in your shell.
 - NVIDIA_API_BASE=https://integrate.api.nvidia.com/v1
 - NVIDIA_API_KEY=
 - NVIDIA_MODEL=
+- NVIDIA_TIMEOUT_SECONDS=60
+- NVIDIA_MAX_TOKENS=350
+- NVIDIA_TEMPERATURE=0
 - PROOFSTACK_STORAGE=local or firestore
 - GCP_PROJECT_ID=
 - GCS_BUCKET=
@@ -96,4 +111,4 @@ Ownership lanes in `docs/TEAM.md` are proposals for kickoff discussion, not perm
 
 ## Status
 
-Bootstrap ready for team kickoff. See `STATUS.md`.
+Bootstrap ready for team iteration. See `STATUS.md`.
