@@ -1,29 +1,116 @@
 import csv
 import json
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-from proofstack.evaluation import classification_metrics
 
-def read(path):
+from proofstack.evaluation import LABELS, classification_metrics
+
+
+def read_csv(path):
     with path.open(encoding="utf-8", newline="") as f:
         return list(csv.DictReader(f))
 
-gold = read(ROOT / "data/gold_labels.csv")
-pred = read(ROOT / "results/predictions.csv")
-gold_by = {r["evidence_id"]: r["label"] for r in gold if r["label"]}
-pred_by = {r["evidence_id"]: r["predicted_label"] for r in pred}
-missing = [k for k,v in gold_by.items() if k not in pred_by]
+
+def assert_unique(rows, key, label):
+    values = [row[key] for row in rows]
+    duplicates = sorted({value for value in values if values.count(value) > 1})
+    if duplicates:
+        raise SystemExit(f"Duplicate {label} IDs: {duplicates}")
+
+
+gold = read_csv(ROOT / "data/gold_labels.csv")
+pred = read_csv(ROOT / "results/predictions.csv")
+
+assert_unique(gold, "evidence_id", "gold")
+assert_unique(pred, "evidence_id", "prediction")
+
+gold_by = {row["evidence_id"]: row for row in gold if row["label"]}
+if len(gold_by) != 20:
+    raise SystemExit(
+        f"Gold labels are incomplete; expected 20 completed labels, found {len(gold_by)}."
+    )
+
+pred_by = {row["evidence_id"]: row for row in pred}
+gold_ids = set(gold_by)
+pred_ids = set(pred_by)
+
+missing = sorted(gold_ids - pred_ids)
+extra = sorted(pred_ids - gold_ids)
 if missing:
     raise SystemExit(f"Missing predictions: {missing}")
-if len(gold_by) != 20:
-    raise SystemExit("Gold labels are incomplete; manually label all 20 documents first.")
-labels = list(gold_by)
-metrics = classification_metrics([gold_by[k] for k in labels], [pred_by[k] for k in labels])
-parse_success = sum(pred_by[k] in ("SUPPORTED","UNSUPPORTED") for k in labels) / len(labels)
-metrics["parse_success_rate"] = parse_success
-out = ROOT / "results/metrics.json"
-out.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+if extra:
+    raise SystemExit(f"Unexpected prediction IDs: {extra}")
+if len(pred_by) != 20:
+    raise SystemExit(f"Expected exactly 20 predictions, found {len(pred_by)}.")
+
+providers = {row.get("provider", "") for row in pred}
+models = {row.get("model_id", "") for row in pred}
+run_starts = {row.get("run_started_utc", "") for row in pred}
+if len(providers) != 1 or len(models) != 1 or len(run_starts) != 1:
+    raise SystemExit(
+        "Prediction provenance is inconsistent across rows; rerun as one clean batch."
+    )
+
+ordered_ids = [row["evidence_id"] for row in gold if row["label"]]
+gold_labels = [gold_by[evidence_id]["label"] for evidence_id in ordered_ids]
+pred_labels = [pred_by[evidence_id]["predicted_label"] for evidence_id in ordered_ids]
+
+metrics = classification_metrics(gold_labels, pred_labels)
+parse_success_count = sum(label in LABELS for label in pred_labels)
+metrics.update({
+    "parse_success_count": parse_success_count,
+    "parse_failure_count": len(pred_labels) - parse_success_count,
+    "parse_success_rate": parse_success_count / len(pred_labels),
+    "provider": next(iter(providers)),
+    "model_id": next(iter(models)),
+    "run_started_utc": next(iter(run_starts)),
+    "evaluation_generated_utc": datetime.now(timezone.utc).isoformat(),
+})
+
+results_dir = ROOT / "results"
+metrics_path = results_dir / "metrics.json"
+metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+
+errors = []
+for evidence_id in ordered_ids:
+    gold_row = gold_by[evidence_id]
+    pred_row = pred_by[evidence_id]
+    predicted = pred_row["predicted_label"]
+    if predicted != gold_row["label"]:
+        errors.append({
+            "question_id": gold_row["question_id"],
+            "evidence_id": evidence_id,
+            "title": pred_row.get("title", ""),
+            "artifact_type": pred_row.get("artifact_type", ""),
+            "gold_label": gold_row["label"],
+            "predicted_label": predicted,
+            "parse_status": pred_row.get("parse_status", ""),
+            "rationale": pred_row.get("rationale", ""),
+            "cited_excerpt": pred_row.get("cited_excerpt", ""),
+            "raw_output": pred_row.get("raw_output", ""),
+        })
+
+error_path = results_dir / "error_analysis.csv"
+with error_path.open("w", newline="", encoding="utf-8") as f:
+    fieldnames = [
+        "question_id",
+        "evidence_id",
+        "title",
+        "artifact_type",
+        "gold_label",
+        "predicted_label",
+        "parse_status",
+        "rationale",
+        "cited_excerpt",
+        "raw_output",
+    ]
+    writer = csv.DictWriter(f, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(errors)
+
 print(json.dumps(metrics, indent=2))
+print(error_path)
