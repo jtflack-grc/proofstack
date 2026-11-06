@@ -1,13 +1,14 @@
-# Google Cloud deployment
+# Google Cloud deployment — contingency path
 
-ProofStack intentionally uses a small cloud footprint:
+ProofStack intentionally uses a small Google Cloud footprint:
 
 - **Cloud Run** — reviewer application
 - **Firestore** — reviewer decision log
-- **Vertex AI / Gemini** — optional live-model fallback if NVIDIA event access is unavailable
-- **Secret Manager** — NVIDIA API key only when the NVIDIA provider is enabled
+- **Vertex AI / Gemini** — primary live model provider
 
-Cloud Storage remains optional. Do not add it merely to increase the service count.
+The repository also contains an optional NVIDIA adapter. The contingency deployment does not depend on it.
+
+Cloud Storage is unnecessary for the MVP because the synthetic evidence is packaged with the application.
 
 ## Security model
 
@@ -15,10 +16,9 @@ Use a dedicated, user-managed Cloud Run service account. Do not download a servi
 
 The application uses Google Cloud Application Default Credentials through the attached Cloud Run service identity.
 
-For the current MVP, the runtime identity needs:
+Runtime permissions:
 - `roles/datastore.user` for Firestore read/write
-- `roles/aiplatform.user` only when the Vertex provider is enabled
-- `roles/secretmanager.secretAccessor` on the NVIDIA secret only when NVIDIA is enabled
+- `roles/aiplatform.user` for Vertex AI inference
 
 Keep deployer permissions separate from runtime permissions. Do not grant Owner or Editor to the runtime identity.
 
@@ -30,7 +30,7 @@ export GCP_REGION="us-east1"
 gcloud config set project "$GCP_PROJECT_ID"
 ```
 
-Use the region approved for the BUILD project. Cloud Run/Firestore location and model location do not have to be identical, but each choice should be intentional.
+Use project and locations approved for the BUILD environment.
 
 ## 2. Enable required APIs
 
@@ -41,7 +41,6 @@ gcloud services enable \
   artifactregistry.googleapis.com \
   firestore.googleapis.com \
   iam.googleapis.com \
-  secretmanager.googleapis.com \
   aiplatform.googleapis.com
 ```
 
@@ -49,13 +48,13 @@ Cloud Run source deployment uses Cloud Build and Artifact Registry behind the sc
 
 ## 3. Create or confirm Firestore
 
-First check whether a database already exists:
+Check first:
 
 ```bash
 gcloud firestore databases list --project "$GCP_PROJECT_ID"
 ```
 
-If the project does not already have a suitable default database, create a Firestore Native database only after confirming the location:
+If there is no suitable default database, create one only after confirming the location:
 
 ```bash
 gcloud firestore databases create \
@@ -68,7 +67,7 @@ gcloud firestore databases create \
 
 Do not casually recreate or relocate an existing database.
 
-## 4. Create a dedicated runtime identity
+## 4. Create the runtime identity
 
 ```bash
 export CLOUD_RUN_SERVICE_ACCOUNT="proofstack-runtime@$GCP_PROJECT_ID.iam.gserviceaccount.com"
@@ -80,102 +79,68 @@ gcloud iam service-accounts create proofstack-runtime \
 gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
   --member="serviceAccount:$CLOUD_RUN_SERVICE_ACCOUNT" \
   --role="roles/datastore.user"
-```
 
-If Vertex AI is the live provider:
-
-```bash
 gcloud projects add-iam-policy-binding "$GCP_PROJECT_ID" \
   --member="serviceAccount:$CLOUD_RUN_SERVICE_ACCOUNT" \
   --role="roles/aiplatform.user"
 ```
 
-## 5. NVIDIA path
+## 5. Verify Vertex before deployment
 
-Only configure this after the team has a valid credential.
-
-```bash
-export NVIDIA_SECRET_NAME="proofstack-nvidia-api-key"
-
-printf '%s' "$NVIDIA_API_KEY" | gcloud secrets create "$NVIDIA_SECRET_NAME" \
-  --data-file=- \
-  --replication-policy=automatic \
-  --project="$GCP_PROJECT_ID"
-```
-
-If the secret already exists, add a version instead.
+Choose a model actually available to the project.
 
 ```bash
-gcloud secrets add-iam-policy-binding "$NVIDIA_SECRET_NAME" \
-  --member="serviceAccount:$CLOUD_RUN_SERVICE_ACCOUNT" \
-  --role="roles/secretmanager.secretAccessor" \
-  --project="$GCP_PROJECT_ID"
-```
-
-Then:
-
-```bash
-export PROOFSTACK_PROVIDER=nvidia
-export NVIDIA_MODEL="confirmed/model-id"
-export NVIDIA_SECRET_NAME="proofstack-nvidia-api-key"
-bash scripts/deploy_cloud_run.sh
-```
-
-## 6. Vertex fallback path
-
-Use this only if the project has Vertex AI access and NVIDIA event access is unavailable.
-
-First run a synthetic smoke test locally or in Cloud Shell with Application Default Credentials:
-
-```bash
-export GCP_PROJECT_ID="your-project-id"
+export GOOGLE_CLOUD_PROJECT="$GCP_PROJECT_ID"
 export GOOGLE_CLOUD_LOCATION="global"
 export VERTEX_MODEL="confirmed-model-id"
+
 python scripts/check_vertex.py
 ```
 
-Then deploy:
+The smoke test must succeed on synthetic data before the final report claims a live Vertex integration.
+
+## 6. Deploy the live contingency build
 
 ```bash
 export PROOFSTACK_PROVIDER=vertex
 export VERTEX_MODEL="confirmed-model-id"
 export GOOGLE_CLOUD_LOCATION="global"
+export PUBLIC_DEMO=false
+
 bash scripts/deploy_cloud_run.sh
 ```
 
-The model ID remains environment-driven. Do not hard-code a model merely because it appears in an example.
+The deployment script is private by default. Set `PUBLIC_DEMO=true` only if an unauthenticated judging/demo URL is intentionally required.
 
-## 7. Mock-provider cloud slice
+## 7. Offline/cloud-platform safety net
 
-The app can still be deployed with the deterministic mock provider to verify Cloud Run and Firestore independently of model access:
+Model access and cloud deployment can be tested independently.
+
+To verify Cloud Run + Firestore before Vertex is available:
 
 ```bash
 export PROOFSTACK_PROVIDER=mock
 bash scripts/deploy_cloud_run.sh
 ```
 
-## 8. Public access
+Local development also defaults to mock mode.
 
-The deployment script is private by default. Set:
+## 8. Verify the vertical slice
 
-```bash
-export PUBLIC_DEMO=true
-```
-
-only when an unauthenticated judging/demo URL is intentionally required.
-
-## 9. Verify
-
-Minimum deployment verification:
+Minimum verification:
 
 1. Cloud Run revision becomes ready.
 2. Reviewer page loads.
-3. A synthetic evidence case can be assessed.
-4. A human decision can be recorded.
-5. A new document appears in the configured Firestore collection.
-6. Switching evidence clears the prior model assessment.
-7. A hallucinated cited excerpt is visibly rejected.
-8. Model-overrides require a reviewer note.
-9. No secret is visible in the repository, UI, logs, or screenshots.
+3. One weak-evidence case can be assessed.
+4. One operational-evidence case can be assessed.
+5. Switching evidence clears the prior assessment.
+6. A hallucinated cited excerpt is visibly rejected.
+7. Human overrides require a note.
+8. A reviewer decision is persisted to Firestore.
+9. No credential is present in the repository, UI, logs or screenshots.
 
-Do not claim live NVIDIA or Vertex integration until the corresponding smoke test actually succeeds.
+## Optional NVIDIA adapter
+
+The NVIDIA provider remains available for experimentation if independent credentials later become available. It is not part of the contingency definition of done.
+
+Do not claim NVIDIA integration or hackathon participation unless either actually occurred.

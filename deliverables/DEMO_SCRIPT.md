@@ -14,7 +14,7 @@ Open one question.
 
 "This is the exact claim we're reviewing. ProofStack keeps the claim separate from the evidence so the reviewer can see what must actually be proven."
 
-Choose a case that is visually easy to understand.
+Choose a visually simple case.
 
 ## 1:00–1:45 — Show weak evidence
 
@@ -22,14 +22,13 @@ Open a policy/procedure artifact.
 
 "This document is relevant, but relevance is not the same as proof. It says what should happen. It does not necessarily show what happened."
 
-Run the model.
+Run the Vertex assessment.
 
 Show:
 - advisory label
 - rationale
 - cited excerpt
-
-Do not linger on raw model prose.
+- citation grounding result
 
 ## 1:45–2:30 — Show operational evidence
 
@@ -49,25 +48,28 @@ Point to the excerpt that grounds the decision.
 
 Record reviewer label and a short note.
 
+If overriding the model, show that a reviewer explanation is required.
+
 Show that the decision is persisted.
 
-If using Firestore in the live demo, show only a safe metadata view or screenshot prepared in advance. Do not expose credentials or unnecessary cloud-console clutter.
+If using Firestore in the demo, show only safe metadata or a prepared screenshot. Do not expose credentials or unnecessary cloud-console clutter.
 
 ## 3:10–3:45 — Architecture
 
 Show one simple architecture image/slide.
 
-"ProofStack runs as a small Streamlit application on Cloud Run. The model provider uses NVIDIA's OpenAI-compatible interface. Reviewer decisions are stored in Firestore. The runtime uses a dedicated least-privilege identity."
+"ProofStack runs as a Streamlit application on Cloud Run. Vertex AI provides the advisory model assessment. Reviewer decisions are stored in Firestore. The runtime uses a dedicated least-privilege service identity."
 
-If a component is not live, state that accurately.
+If any component is not live, state that accurately.
 
 ## 3:45–4:30 — Evaluation
 
 Show final measured results.
 
-"Our team manually labeled all 20 evidence items before running the final model evaluation."
+"We manually labeled all 20 evidence items before running the final model evaluation."
 
 State:
+- model **[MODEL ID]**
 - accuracy **[VALUE]**
 - macro F1 **[VALUE]**
 - parse success **[VALUE]**
@@ -88,10 +90,11 @@ End on the reviewer UI or final takeaway slide.
 Before recording:
 - use synthetic data only
 - have one weak-evidence and one strong-evidence case preselected
-- verify NVIDIA credential
+- verify Vertex access and model ID
 - verify Cloud Run URL
 - verify Firestore write
 - close unrelated browser tabs
 - hide bookmarks/account notifications
-- have screenshots available if a live cloud console step fails
-- never expose API key or secret values
+- have screenshots available if a live cloud-console step fails
+- never expose credentials
+- do not mention NVIDIA or hackathon participation unless either actually occurred

@@ -50,18 +50,21 @@ Describe:
 - disagreement handling
 - labels frozen before final evaluation
 
-Insert actual team process here:
+Insert actual process here:
 **[FINAL LABELING PROCESS]**
 
 ### Architecture
-Keep architecture bounded:
+Contingency architecture:
 - Streamlit reviewer UI
-- NVIDIA OpenAI-compatible model provider
+- Vertex AI / Gemini advisory provider
 - strict parser
+- citation grounding check
 - Cloud Run
 - Firestore decision log
-- optional Secret Manager for API credential
+- dedicated Cloud Run service identity
 - human decision authority
+
+NVIDIA and external hackathons are not part of the contingency architecture.
 
 Insert deployed architecture status:
 **[VERIFIED CLOUD STATUS]**
@@ -70,20 +73,23 @@ Insert deployed architecture status:
 Mention:
 - evidence treated as untrusted input
 - prompt-injection boundary
+- citation grounding
 - no autonomous approval
 - no invented controls
 - no real participant/customer evidence
 - least-privilege cloud identity
 - model results bound to the exact question/evidence case
+- reviewer note required for model override
 
 ## Page 3 — Evaluation, findings, limitations, and next steps
 
 ### Evaluation question
-How often does the configured model agree with the team's manual supported/unsupported judgments, and where does it fail?
+How often does the configured Vertex model agree with the manually frozen supported/unsupported judgments, and where does it fail?
 
 ### Final metrics
 Insert only after evaluation:
 - n = **[N]**
+- model = **[MODEL ID]**
 - accuracy = **[VALUE]**
 - macro precision = **[VALUE]**
 - macro recall = **[VALUE]**
@@ -96,7 +102,7 @@ Summarize actual error modes:
 - **[ERROR MODE 2]**
 - **[ERROR MODE 3]**
 
-Include at least one example where model disagreement or uncertainty demonstrates why human review matters.
+Include at least one example where disagreement, citation failure or uncertainty demonstrates why human review matters.
 
 ### Limitations
 Required:
@@ -114,7 +120,7 @@ Only include realistic extensions:
 - larger independently labeled set
 - reviewer agreement analysis
 - more nuanced evidence-gap categories
-- stronger citation validation
+- stronger semantic citation validation
 - production security/privacy review if ever used with real evidence
 
 ### Team contributions

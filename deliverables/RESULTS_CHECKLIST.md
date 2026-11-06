@@ -8,17 +8,17 @@ Do not finalize the brief, deck, or video until these are true.
 - [ ] reviewer names/notes recorded as required
 - [ ] disagreements resolved/documented
 
-## NVIDIA
-- [ ] actual credential verified
-- [ ] model selected from visible model list
-- [ ] synthetic smoke test parseable
+## Vertex AI
+- [ ] GCP project confirmed
+- [ ] model ID confirmed as available to the project
+- [ ] synthetic Vertex smoke test parseable
 - [ ] final model ID recorded
 
 ## Google Cloud
 - [ ] Cloud Run deployment verified
 - [ ] runtime service account recorded
 - [ ] Firestore decision persistence verified
-- [ ] no secrets in repo/screenshots/logs
+- [ ] no credentials in repo/screenshots/logs
 - [ ] public/private access choice intentional
 
 ## Evaluation
@@ -39,8 +39,9 @@ Do not finalize the brief, deck, or video until these are true.
 - [ ] Maimuna contribution verified
 
 ## Submission consistency
-- [ ] brief, deck, demo use the same metrics
+- [ ] brief, deck and demo use the same model ID and metrics
 - [ ] architecture matches what was actually deployed
 - [ ] limitations appear in all appropriate deliverables
 - [ ] no claim of compliance/certification
 - [ ] no claim of production readiness
+- [ ] no NVIDIA or hackathon claim unless actually verified

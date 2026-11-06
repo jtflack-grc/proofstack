@@ -12,8 +12,9 @@ The MVP supports **10 security questions** and **20 synthetic evidence documents
 2. Inspect the evidence submitted for that claim.
 3. Ask the configured model for a binary assessment: SUPPORTED or UNSUPPORTED.
 4. Show the model rationale and cited excerpt beside the source evidence.
-5. Require a human reviewer to record the final decision and notes.
-6. Preserve a clean decision log for evaluation and demonstration.
+5. Independently check whether the cited excerpt is present in the evidence.
+6. Require a human reviewer to record the final decision.
+7. Preserve a traceable decision log for evaluation and demonstration.
 
 ProofStack does **not** certify compliance, invent missing controls, or replace reviewer judgment.
 
@@ -21,23 +22,28 @@ ProofStack does **not** certify compliance, invent missing controls, or replace 
 
 - 10 questionnaire questions
 - 20 synthetic evidence documents
-- manually labeled supported/unsupported evaluation set
+- manually labeled SUPPORTED / UNSUPPORTED evaluation set
 - visible evidence gaps
 - reviewer decision log
-- meaningful Google Cloud and NVIDIA integration
-- reproducible setup and team contribution record
+- Google Cloud deployment using Cloud Run and Firestore
+- Vertex AI / Gemini live-model path
+- reproducible setup and evaluation record
 
-## Proposed architecture
+The capstone does not depend on participation in an external hackathon or NVIDIA event. NVIDIA support remains in the repository as an optional provider adapter, but it is not part of the contingency delivery path.
+
+## Architecture
 
 Reviewer UI (Streamlit)
-→ questionnaire + evidence pack
+→ questionnaire + synthetic evidence pack
 → model provider
-  - mock provider for local development
-  - NVIDIA NIM-compatible provider for BUILD integration
-→ reviewer decision
-→ local CSV during development / Firestore for cloud demo
+  - mock provider for local/offline development
+  - Vertex AI / Gemini for the intended live cloud demonstration
+  - optional NVIDIA adapter if credentials independently become available
+→ strict output parser + citation grounding check
+→ human reviewer decision
+→ local CSV during development / Firestore for cloud demonstration
 
-Synthetic evidence may be served from the repo during development and mirrored to Cloud Storage for the deployed demonstration. The app is container-ready for Cloud Run.
+The application is container-ready for Cloud Run and uses a dedicated runtime service identity rather than downloaded service-account keys.
 
 ## Quick start
 
@@ -45,37 +51,49 @@ Synthetic evidence may be served from the repo during development and mirrored t
 2. Install requirements: `pip install -r requirements.txt`
 3. Validate the seed data: `python scripts/validate_dataset.py`
 4. Run tests: `pytest -q`
-5. Launch: `streamlit run app.py`
+5. Launch locally: `streamlit run app.py`
 
-The default provider is `mock`, so no API key is required for local development.
+The default provider is `mock`, so local development does not require cloud credentials.
 
-## NVIDIA readiness check
+## Vertex AI / Gemini smoke test
 
-ProofStack uses NVIDIA's OpenAI-compatible chat-completions interface. Model choice is intentionally environment-driven because event/account availability can change.
+The intended live provider for the contingency build is Vertex AI / Gemini using Google Cloud Application Default Credentials.
 
-1. Export `NVIDIA_API_KEY`.
-2. Run `python scripts/check_nvidia.py` to list model IDs visible to that credential.
-3. Set `NVIDIA_MODEL` to a confirmed model ID.
-4. Run `python scripts/check_nvidia.py --smoke` to execute one synthetic assessment.
-5. Set `PROOFSTACK_PROVIDER=nvidia` before launching the app.
+1. Set `GCP_PROJECT_ID` or `GOOGLE_CLOUD_PROJECT`.
+2. Set `GOOGLE_CLOUD_LOCATION` to the approved model location.
+3. Set `VERTEX_MODEL` to a model available in the project.
+4. Run `python scripts/check_vertex.py`.
+5. Set `PROOFSTACK_PROVIDER=vertex`.
+6. Deploy with `bash scripts/deploy_cloud_run.sh`.
 
-The smoke test uses synthetic data only. Never paste real questionnaire evidence, participant information, or secrets into a hosted inference endpoint unless the project has explicitly approved that data path.
+The smoke test uses synthetic data only.
+
+## Optional NVIDIA adapter
+
+The repository retains an NVIDIA OpenAI-compatible provider and readiness script. It is **not required** for the contingency BUILD path and should not delay submission.
+
+If valid NVIDIA credentials later become available, `python scripts/check_nvidia.py` can list visible models and `python scripts/check_nvidia.py --smoke` can verify one synthetic assessment.
+
+Do not claim NVIDIA integration unless that smoke test actually succeeds.
 
 ## Configuration
 
 Copy `.env.example` to your local environment or export variables in your shell.
 
-- PROOFSTACK_PROVIDER=mock or nvidia
-- NVIDIA_API_BASE=https://integrate.api.nvidia.com/v1
-- NVIDIA_API_KEY=
-- NVIDIA_MODEL=
-- NVIDIA_TIMEOUT_SECONDS=60
-- NVIDIA_MAX_TOKENS=350
-- NVIDIA_TEMPERATURE=0
+Primary contingency settings:
+- PROOFSTACK_PROVIDER=mock or vertex
+- GOOGLE_CLOUD_PROJECT=
+- GOOGLE_CLOUD_LOCATION=global
+- VERTEX_MODEL=
+- VERTEX_MAX_TOKENS=350
 - PROOFSTACK_STORAGE=local or firestore
 - GCP_PROJECT_ID=
-- GCS_BUCKET=
+- GCP_REGION=us-east1
+- CLOUD_RUN_SERVICE=proofstack
+- CLOUD_RUN_SERVICE_ACCOUNT=
 - FIRESTORE_COLLECTION=proofstack_decisions
+
+Optional NVIDIA settings remain in `.env.example`.
 
 Never commit API keys, service-account keys, real customer evidence, or personal data.
 
@@ -86,14 +104,12 @@ Never commit API keys, service-account keys, real customer evidence, or personal
 - `data/questions.json` — 10 questionnaire questions
 - `data/evidence/` — 20 synthetic evidence documents
 - `data/evidence_manifest.csv` — question-to-document mapping
-- `data/gold_labels.csv` — team-owned manual labels; intentionally blank at bootstrap
-- `docs/TEAM.md` — proposed ownership lanes to confirm at kickoff
-- `docs/KICKOFF.md` — first-meeting agenda
-- `docs/PRODUCT_BRIEF.md` — audience, problem, value, success measures
-- `docs/ARCHITECTURE.md` — implementation boundaries
+- `data/gold_labels.csv` — manual labels; intentionally blank until human review
+- `docs/CONTINGENCY_BUILD.md` — delivery assumptions and contribution boundaries
+- `docs/GCP_DEPLOYMENT.md` — Cloud Run / Firestore / Vertex deployment
 - `docs/EVALUATION_PLAN.md` — evaluation protocol
 - `docs/SECURITY.md` — threat model and security expectations
-- `docs/WEEK1_BACKLOG.md` — starting work, not immutable assignments
+- `deliverables/` — brief, deck, demo and final-results scaffolds
 
 ## Human authority
 
@@ -107,8 +123,8 @@ ProofStack BUILD team:
 - Kristan Mack
 - Maimuna Chowdhury
 
-Ownership lanes in `docs/TEAM.md` are proposals for kickoff discussion, not permanent assignments.
+The contingency branch is explicitly John-owned implementation insurance. Any teammate contributions that arrive later should retain their real authorship and be reviewed normally.
 
 ## Status
 
-Bootstrap ready for team iteration. See `STATUS.md`.
+See `STATUS.md`.
