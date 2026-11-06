@@ -164,7 +164,7 @@ with right:
             )
 
         st.markdown("**Why the model reached that recommendation**")
-        st.write(assessment.get("rationale", "") or "No rationale was returned.")
+        st.text(assessment.get("rationale", "") or "No rationale was returned.")
 
         cited_excerpt = assessment.get("cited_excerpt", "")
         if cited_excerpt:
