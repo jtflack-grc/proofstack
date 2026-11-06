@@ -61,10 +61,18 @@ pred_labels = [pred_by[evidence_id]["predicted_label"] for evidence_id in ordere
 
 metrics = classification_metrics(gold_labels, pred_labels)
 parse_success_count = sum(label in LABELS for label in pred_labels)
+citation_valid_values = [
+    str(pred_by[evidence_id].get("citation_valid", "")).strip().lower() == "true"
+    for evidence_id in ordered_ids
+]
+citation_valid_count = sum(citation_valid_values)
 metrics.update({
     "parse_success_count": parse_success_count,
     "parse_failure_count": len(pred_labels) - parse_success_count,
     "parse_success_rate": parse_success_count / len(pred_labels),
+    "citation_valid_count": citation_valid_count,
+    "citation_invalid_count": len(citation_valid_values) - citation_valid_count,
+    "citation_grounding_rate": citation_valid_count / len(citation_valid_values),
     "provider": next(iter(providers)),
     "model_id": next(iter(models)),
     "run_started_utc": next(iter(run_starts)),
@@ -80,7 +88,8 @@ for evidence_id in ordered_ids:
     gold_row = gold_by[evidence_id]
     pred_row = pred_by[evidence_id]
     predicted = pred_row["predicted_label"]
-    if predicted != gold_row["label"]:
+    citation_valid = str(pred_row.get("citation_valid", "")).strip().lower() == "true"
+    if predicted != gold_row["label"] or not citation_valid:
         errors.append({
             "question_id": gold_row["question_id"],
             "evidence_id": evidence_id,
@@ -88,7 +97,9 @@ for evidence_id in ordered_ids:
             "artifact_type": pred_row.get("artifact_type", ""),
             "gold_label": gold_row["label"],
             "predicted_label": predicted,
+            "label_correct": predicted == gold_row["label"],
             "parse_status": pred_row.get("parse_status", ""),
+            "citation_valid": citation_valid,
             "rationale": pred_row.get("rationale", ""),
             "cited_excerpt": pred_row.get("cited_excerpt", ""),
             "raw_output": pred_row.get("raw_output", ""),
@@ -103,7 +114,9 @@ with error_path.open("w", newline="", encoding="utf-8") as f:
         "artifact_type",
         "gold_label",
         "predicted_label",
+        "label_correct",
         "parse_status",
+        "citation_valid",
         "rationale",
         "cited_excerpt",
         "raw_output",
