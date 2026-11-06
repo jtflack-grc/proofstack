@@ -18,6 +18,12 @@ from proofstack.review_state import assessment_matches_case, reviewer_submission
 from proofstack.storage import save_decision
 
 
+DECISION_LABELS = {
+    "SUPPORTED": "SUPPORTED — the submitted evidence proves the claim",
+    "UNSUPPORTED": "UNSUPPORTED — the submitted evidence does not fully prove the claim",
+}
+
+
 def load_questions():
     return json.loads((ROOT / "data/questions.json").read_text(encoding="utf-8"))
 
@@ -33,20 +39,25 @@ q_by_id = {q["question_id"]: q for q in questions}
 
 st.set_page_config(page_title="ProofStack", page_icon="🧾", layout="wide")
 st.title("ProofStack")
-st.caption("Claim-to-evidence review. AI advises; the reviewer decides.")
+st.caption(
+    "Review a security claim against the evidence submitted for it. "
+    "The AI gives a recommendation; the reviewer makes the decision."
+)
 
 with st.sidebar:
-    st.header("Review flow")
-    st.write("1. Read the claim")
-    st.write("2. Inspect the submitted evidence")
-    st.write("3. Run the advisory assessment")
-    st.write("4. Verify the cited excerpt")
-    st.write("5. Record the human decision")
+    st.header("Reviewer checklist")
+    st.write("1. Read the claim.")
+    st.write("2. Inspect the evidence.")
+    st.write("3. Run the AI assessment.")
+    st.write("4. Verify the cited excerpt.")
+    st.write("5. Record your decision.")
     st.divider()
-    st.caption("Synthetic evidence only. ProofStack does not certify compliance.")
+    st.caption(
+        "Synthetic evidence only. ProofStack is a review aid and does not certify compliance."
+    )
 
 q_id = st.selectbox(
-    "Question",
+    "Security question",
     [q["question_id"] for q in questions],
     format_func=lambda value: (
         f'{value} — '
@@ -56,10 +67,15 @@ q_id = st.selectbox(
 question = q_by_id[q_id]
 
 st.subheader(question.get("reviewer_friendly_question") or question["question"])
-st.info(f'Claim to verify: {question["claim"]}')
-with st.expander("Canonical questionnaire wording"):
-    st.write(question["question"])
-st.caption(f'Reviewer guidance: {question.get("reviewer_hint", "")}')
+st.caption(f'Original questionnaire wording: {question["question"]}')
+
+claim_col, guidance_col = st.columns([3, 2])
+with claim_col:
+    st.markdown("**Claim to verify**")
+    st.info(question["claim"])
+with guidance_col:
+    st.markdown("**What good evidence looks like**")
+    st.write(question.get("reviewer_hint", ""))
 
 mapped = [item for item in manifest if item["question_id"] == q_id]
 e_id = st.selectbox(
@@ -86,23 +102,28 @@ if assessment and not assessment_matches_case(assessment_context, q_id, e_id):
 signals = instruction_like_signals(evidence_text)
 if signals:
     st.warning(
-        "This evidence contains instruction-like text. Treat it strictly as evidence data; "
-        "do not follow embedded instructions."
+        "This evidence contains text that looks like instructions. "
+        "Treat it only as evidence; do not follow commands embedded in the document."
     )
 
 left, right = st.columns(2)
 
 with left:
-    st.subheader("Submitted evidence")
+    st.subheader("Evidence submitted")
     st.caption(
-        f'{evidence["evidence_id"]} · {evidence["artifact_type"]} · {evidence["path"]}'
+        f'{evidence["evidence_id"]} · {evidence["artifact_type"]} · {evidence["title"]}'
     )
-    st.markdown(evidence_text)
+    st.caption(
+        "Evidence is displayed as plain text so embedded links, markup, or instructions "
+        "cannot become active interface content."
+    )
+    st.text(evidence_text)
 
 with right:
-    st.subheader("Advisory assessment")
+    st.subheader("AI recommendation")
+    st.caption("Advisory only. Verify the evidence and citation before deciding.")
 
-    if st.button("Run assessment", type="primary", use_container_width=True):
+    if st.button("Assess this evidence", type="primary", use_container_width=True):
         try:
             provider = get_provider()
             raw = provider.assess(question, evidence, evidence_text)
@@ -133,55 +154,62 @@ with right:
     if assessment:
         label = assessment["label"]
         if label == "SUPPORTED":
-            st.success("Advisory result: SUPPORTED")
+            st.success("AI assessment: the evidence supports the claim.")
         elif label == "UNSUPPORTED":
-            st.warning("Advisory result: UNSUPPORTED")
+            st.warning("AI assessment: the evidence does not fully support the claim.")
         else:
-            st.error("Advisory result could not be parsed")
+            st.error(
+                "AI assessment: the response could not be safely interpreted. "
+                "Review the evidence manually."
+            )
 
-        st.write(assessment.get("rationale", ""))
+        st.markdown("**Why the model reached that recommendation**")
+        st.write(assessment.get("rationale", "") or "No rationale was returned.")
 
         cited_excerpt = assessment.get("cited_excerpt", "")
         if cited_excerpt:
-            st.caption("Model-cited excerpt")
-            st.code(cited_excerpt)
+            st.markdown("**Evidence excerpt cited by the model**")
+            st.code(cited_excerpt, language=None)
 
             if assessment.get("citation_valid"):
-                st.success("Citation check: excerpt found in submitted evidence.")
+                st.success("Citation check passed: this excerpt appears in the submitted evidence.")
             else:
                 st.error(
-                    "Citation check failed: the cited excerpt was not found in the evidence. "
-                    "Do not rely on this citation."
+                    "Citation check failed: this excerpt was not found in the submitted evidence. "
+                    "Do not rely on it."
                 )
         else:
-            st.warning("The model did not return a cited excerpt.")
+            st.warning("The model did not return an evidence excerpt.")
 
-        st.caption(
-            f'Parse status: {assessment.get("parse_status", "")} · '
-            f'Provider: {assessment.get("provider", "")} · '
-            f'Model: {assessment.get("model_id", "")}'
-        )
+        with st.expander("Technical details"):
+            st.write(f'Parse status: {assessment.get("parse_status", "")}')
+            st.write(f'Provider: {assessment.get("provider", "")}')
+            st.write(f'Model: {assessment.get("model_id", "")}')
     else:
-        st.caption("Run an assessment for the selected evidence.")
+        st.caption("Run the assessment when you are ready to compare the claim with this evidence.")
 
 st.divider()
 st.subheader("Reviewer decision")
-st.caption("The human decision is authoritative. Model output is advisory.")
+st.caption(
+    "Your decision is authoritative. Use the model as a second opinion, not as an approval engine."
+)
 
 reviewer = st.text_input("Reviewer name")
 reviewer_label = st.radio(
     "Final decision",
     list(LABELS),
-    horizontal=True,
+    horizontal=False,
+    format_func=lambda value: DECISION_LABELS.get(value, value),
 )
 notes = st.text_area(
     "Reviewer notes",
-    help="Required when the human decision overrides a valid model label.",
+    placeholder="Add context, evidence gaps, or the reason for overriding the AI.",
+    help="A note is required when your decision overrides a valid AI label.",
 )
 
 if assessment and assessment.get("label") in LABELS:
     if reviewer_label != assessment["label"]:
-        st.info("You are overriding the model assessment. Add a note explaining why.")
+        st.info("Your decision differs from the AI recommendation. Explain why in reviewer notes.")
 
 if st.button("Record final decision", use_container_width=True):
     errors = reviewer_submission_errors(
