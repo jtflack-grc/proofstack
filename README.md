@@ -49,18 +49,18 @@ ProofStack does **not** certify compliance, invent missing controls, or replace 
 
 ```mermaid
 flowchart LR
-    A[Reviewer] --> B[Streamlit reviewer UI]
-    H[Synthetic question + evidence set] --> B
-    B --> C[Vertex AI<br/>Gemini 3.8 Flash]
-    C --> D[Strict structured parser]
-    D --> E[Citation grounding check]
-    E --> F[Human final decision]
-    F --> G[Firestore decision record]
+    A["Reviewer"] --> B["Streamlit reviewer UI"]
+    H["Synthetic question + evidence set"] --> B
+    B --> C["Vertex AI / Gemini 3.8 Flash"]
+    C --> D["Strict structured parser"]
+    D --> E["Citation grounding check"]
+    E --> F["Human final decision"]
+    F --> G["Firestore decision record"]
 
-    subgraph Google Cloud
-      B
-      C
-      G
+    subgraph cloud["Google Cloud"]
+        B
+        C
+        G
     end
 ```
 
@@ -194,9 +194,9 @@ Never commit API keys, service-account keys, real customer evidence, or personal
 | `results/` | frozen evaluation and security-test evidence |
 | `deliverables/` | submission-ready written artifacts and presentation content |
 
-## Contribution record
+## Contributions
 
-The final contingency implementation, cloud integration, hardening, labeling/evaluation, and packaging were completed by **John Flack**. Team discussion contributions are recorded separately and are not represented as repository work unless they were actually delivered.
+ProofStack was developed as part of the MMC GCLP Fall 2026 BUILD. The repository reflects the implementation and project artifacts currently incorporated into the final build, with team contributions and acknowledgements documented separately.
 
 See [CONTRIBUTIONS.md](deliverables/CONTRIBUTIONS.md).
 
@@ -204,7 +204,7 @@ See [CONTRIBUTIONS.md](deliverables/CONTRIBUTIONS.md).
 
 **Verified:** Cloud Run, Vertex AI, Firestore persistence, frozen human labels, final metrics, citation grounding, adversarial probes, CI.
 
-**Not claimed:** compliance certification, production readiness, generalized accuracy, NVIDIA integration, external-hackathon participation, or equal team implementation contribution.
+**Not claimed:** compliance certification, production readiness, generalized accuracy, NVIDIA integration, or external-hackathon participation.
 
 ## Project status
 
