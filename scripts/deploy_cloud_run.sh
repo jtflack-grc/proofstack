@@ -27,6 +27,12 @@ if [[ "${PROOFSTACK_PROVIDER}" == "nvidia" ]]; then
     --update-env-vars "NVIDIA_MODEL=${NVIDIA_MODEL},NVIDIA_API_BASE=${NVIDIA_API_BASE:-https://integrate.api.nvidia.com/v1}"
     --update-secrets "NVIDIA_API_KEY=${NVIDIA_SECRET_NAME}:latest"
   )
+elif [[ "${PROOFSTACK_PROVIDER}" == "vertex" ]]; then
+  : "${VERTEX_MODEL:?Set VERTEX_MODEL when PROOFSTACK_PROVIDER=vertex}"
+
+  args+=(
+    --update-env-vars "GOOGLE_CLOUD_PROJECT=${GCP_PROJECT_ID},GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-global},VERTEX_MODEL=${VERTEX_MODEL}"
+  )
 fi
 
 if [[ "${PUBLIC_DEMO}" == "true" ]]; then
