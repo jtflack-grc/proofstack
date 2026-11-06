@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from proofstack.evidence import citation_is_grounded
 from proofstack.parser import parse_model_output
 from proofstack.providers import get_provider
 
@@ -37,6 +38,7 @@ for item in evidence:
         evidence_text,
     )
     parsed = parse_model_output(raw)
+    citation_valid = citation_is_grounded(parsed.cited_excerpt, evidence_text)
 
     rows.append({
         "run_started_utc": run_started_utc,
@@ -50,6 +52,7 @@ for item in evidence:
         "parse_status": parsed.parse_status,
         "rationale": parsed.rationale,
         "cited_excerpt": parsed.cited_excerpt,
+        "citation_valid": citation_valid,
         "raw_output": raw,
     })
 
@@ -69,6 +72,7 @@ fieldnames = [
     "parse_status",
     "rationale",
     "cited_excerpt",
+    "citation_valid",
     "raw_output",
 ]
 with predictions_path.open("w", newline="", encoding="utf-8") as f:
