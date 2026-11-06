@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from proofstack.evaluation import LABELS, classification_metrics
+from proofstack.evaluation import LABELS, classification_metrics\nfrom proofstack.gold_integrity import verify_frozen_gold
 
 
 def read_csv(path):
@@ -22,7 +22,7 @@ def assert_unique(rows, key, label):
         raise SystemExit(f"Duplicate {label} IDs: {duplicates}")
 
 
-gold = read_csv(ROOT / "data/gold_labels.csv")
+try:\n    gold_manifest = verify_frozen_gold(ROOT)\nexcept ValueError as exc:\n    raise SystemExit(str(exc)) from exc\n\ngold = read_csv(ROOT / "data/gold_labels.csv")
 pred = read_csv(ROOT / "results/predictions.csv")
 
 assert_unique(gold, "evidence_id", "gold")
@@ -68,7 +68,7 @@ metrics.update({
     "provider": next(iter(providers)),
     "model_id": next(iter(models)),
     "run_started_utc": next(iter(run_starts)),
-    "evaluation_generated_utc": datetime.now(timezone.utc).isoformat(),
+    "evaluation_generated_utc": datetime.now(timezone.utc).isoformat(),\n    "gold_labels_sha256": gold_manifest["gold_labels_sha256"],\n    "gold_frozen_at_utc": gold_manifest.get("frozen_at_utc", ""),
 })
 
 results_dir = ROOT / "results"
