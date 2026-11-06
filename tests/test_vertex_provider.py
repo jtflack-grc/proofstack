@@ -39,7 +39,16 @@ def test_vertex_requires_model(monkeypatch):
         google_vertex.GoogleVertexProvider()
 
 
-def test_vertex_uses_adc_project_location_and_model(monkeypatch):
+def test_vertex_rejects_invalid_thinking_level(monkeypatch):
+    monkeypatch.setenv("GCP_PROJECT_ID", "proofstack-test")
+    monkeypatch.setenv("VERTEX_MODEL", "test-model")
+    monkeypatch.setenv("VERTEX_THINKING_LEVEL", "MINIMAL")
+
+    with pytest.raises(RuntimeError, match="LOW, MEDIUM, or HIGH"):
+        google_vertex.GoogleVertexProvider()
+
+
+def test_vertex_uses_adc_project_location_model_and_schema(monkeypatch):
     created = {}
 
     def fake_client(**kwargs):
@@ -49,6 +58,7 @@ def test_vertex_uses_adc_project_location_and_model(monkeypatch):
     monkeypatch.setenv("GCP_PROJECT_ID", "proofstack-test")
     monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "global")
     monkeypatch.setenv("VERTEX_MODEL", "test-model")
+    monkeypatch.setenv("VERTEX_THINKING_LEVEL", "LOW")
     monkeypatch.setattr(google_vertex.genai, "Client", fake_client)
 
     provider = google_vertex.GoogleVertexProvider()
@@ -66,6 +76,11 @@ def test_vertex_uses_adc_project_location_and_model(monkeypatch):
     }
     assert created["client"].models.kwargs["model"] == "test-model"
 
+    config = created["client"].models.kwargs["config"]
+    assert config.response_mime_type == "application/json"
+    assert config.response_schema == google_vertex.ASSESSMENT_SCHEMA
+    assert config.max_output_tokens == 800
+
 
 def test_vertex_empty_response_is_rejected(monkeypatch):
     class EmptyModels:
@@ -77,6 +92,7 @@ def test_vertex_empty_response_is_rejected(monkeypatch):
 
     monkeypatch.setenv("GCP_PROJECT_ID", "proofstack-test")
     monkeypatch.setenv("VERTEX_MODEL", "test-model")
+    monkeypatch.setenv("VERTEX_THINKING_LEVEL", "LOW")
     monkeypatch.setattr(
         google_vertex.genai,
         "Client",
