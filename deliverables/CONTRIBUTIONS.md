@@ -1,10 +1,10 @@
 # ProofStack contribution record
 
-This file records work that was actually delivered or otherwise documented during the MMC BUILD sprint. It does not infer equal contribution from team membership.
+This file summarizes contributions documented during the MMC BUILD sprint and can be updated as additional work is incorporated into the project record.
 
 ## John Flack
 
-Delivered on the contingency path:
+Contributions included:
 
 - project framing and integration leadership
 - final claim/evidence workflow and reviewer UX
@@ -26,19 +26,16 @@ Delivered on the contingency path:
 
 ## Hans Rony
 
-- Participated in early project / product / UI discussions.
-- No repository contribution was available on the final contingency branch at packaging time.
+- Participated in early project, product, and UI discussions.
 
 ## Kristan Mack
 
 - Contributed reviewer-language discussion and questions during team conversation.
-- No repository contribution was available on the final contingency branch at packaging time.
 
 ## Maimuna Chowdhury
 
-- Discussed / drafted security test ideas during team conversation.
-- No repository contribution was available on the final contingency branch at packaging time.
+- Discussed and drafted security test ideas during team conversation.
 
-## Attribution rule
+## Ongoing attribution
 
-Any teammate contribution that arrives later should retain its real authorship and be added to this record based on the work actually delivered.
+This record is intended to remain open to updates as additional teammate contributions, artifacts, or implementation work are incorporated into the project.
