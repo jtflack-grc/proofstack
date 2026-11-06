@@ -1,35 +1,53 @@
-# ProofStack submission package
+# ProofStack final deliverables
 
-MMC BUILD requires:
-- working code
-- README
-- 3-page brief
-- 8-slide deck
-- 5-minute demo
+This directory contains the repository-native versions of the final ProofStack capstone package.
 
-These files are scaffolds only. They must be updated from the final repository state, frozen gold labels, measured model results, deployed architecture, and verified contribution record.
+All artifacts below use the same verified facts:
 
-Do not invent metrics, cloud status, NVIDIA participation, hackathon participation, or team contributions.
+- Vertex AI model: `gemini-3.8-flash`
+- frozen evaluation set: 20 synthetic cases
+- gold labels: 9 SUPPORTED / 11 UNSUPPORTED
+- accuracy: 95.0% (19/20)
+- macro F1: 94.99%
+- parse success: 100%
+- citation grounding: 100%
+- adversarial live-model probes: 4/4 passed
+- single classification error: Q06 / E12, a false support caused by missed current-quarter scope
 
-## Contingency submission story
+## Submission artifacts
 
-Assume:
-- Vertex AI / Gemini is the live model provider
-- Cloud Run hosts the application
-- Firestore stores reviewer decisions
-- NVIDIA and external hackathons are not part of the final implementation
+- [FINAL_BRIEF.md](FINAL_BRIEF.md) — concise three-page project brief source
+- [RESEARCH_PAPER.md](RESEARCH_PAPER.md) — four-to-six-page research paper source
+- [FINAL_DECK_CONTENT.md](FINAL_DECK_CONTENT.md) — final eight-slide presentation content
+- [FINAL_DEMO_SCRIPT.md](FINAL_DEMO_SCRIPT.md) — approximately five-minute narrated demo
+- [CONTRIBUTIONS.md](CONTRIBUTIONS.md) — factual implementation/contribution record
+- [RESULTS_CHECKLIST.md](RESULTS_CHECKLIST.md) — completed final-results gate
 
-If reality changes, update the facts. Do not preserve obsolete architecture merely because it appeared in an early plan.
+The polished DOCX, PDF, and PPTX exports are generated from these same facts for formal submission.
 
-## Finalization order
+## Presentation spine
 
-1. Freeze the 20 manual labels.
-2. Verify Vertex access and run the synthetic smoke test.
-3. Deploy the Cloud Run / Firestore vertical slice.
-4. Run the final evaluation.
-5. Review failures and select honest demo cases.
-6. Update the brief.
-7. Update the deck from the same facts.
-8. Record the demo last.
+The final story is intentionally simple:
 
-One set of facts should drive all three deliverables.
+1. Security claims are easy to state and expensive to verify.
+2. Policies may be relevant without proving operation.
+3. ProofStack separates the claim from the submitted evidence.
+4. Vertex AI provides an advisory assessment and exact cited excerpt.
+5. ProofStack independently checks whether the citation is grounded.
+6. A human reviewer makes the authoritative decision.
+7. Final evaluation reached 95% accuracy with 100% parsing and citation grounding.
+8. The one miss demonstrates the central lesson: **grounded does not mean correct.**
+
+## Integrity rules
+
+Do not alter the frozen gold labels to improve results.
+
+Do not claim:
+- compliance certification
+- production readiness
+- generalized 95% accuracy
+- NVIDIA integration
+- external-hackathon participation
+- equal team implementation contribution
+
+The final evaluation is a small synthetic capstone experiment, not a production benchmark.
