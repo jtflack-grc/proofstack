@@ -7,7 +7,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from proofstack.evaluation import LABELS, classification_metrics\nfrom proofstack.gold_integrity import verify_frozen_gold
+from proofstack.evaluation import LABELS, classification_metrics
+from proofstack.gold_integrity import verify_frozen_gold
 
 
 def read_csv(path):
@@ -22,7 +23,12 @@ def assert_unique(rows, key, label):
         raise SystemExit(f"Duplicate {label} IDs: {duplicates}")
 
 
-try:\n    gold_manifest = verify_frozen_gold(ROOT)\nexcept ValueError as exc:\n    raise SystemExit(str(exc)) from exc\n\ngold = read_csv(ROOT / "data/gold_labels.csv")
+try:
+    gold_manifest = verify_frozen_gold(ROOT)
+except ValueError as exc:
+    raise SystemExit(str(exc)) from exc
+
+gold = read_csv(ROOT / "data/gold_labels.csv")
 pred = read_csv(ROOT / "results/predictions.csv")
 
 assert_unique(gold, "evidence_id", "gold")
@@ -66,6 +72,7 @@ citation_valid_values = [
     for evidence_id in ordered_ids
 ]
 citation_valid_count = sum(citation_valid_values)
+
 metrics.update({
     "parse_success_count": parse_success_count,
     "parse_failure_count": len(pred_labels) - parse_success_count,
@@ -76,7 +83,9 @@ metrics.update({
     "provider": next(iter(providers)),
     "model_id": next(iter(models)),
     "run_started_utc": next(iter(run_starts)),
-    "evaluation_generated_utc": datetime.now(timezone.utc).isoformat(),\n    "gold_labels_sha256": gold_manifest["gold_labels_sha256"],\n    "gold_frozen_at_utc": gold_manifest.get("frozen_at_utc", ""),
+    "evaluation_generated_utc": datetime.now(timezone.utc).isoformat(),
+    "gold_labels_sha256": gold_manifest["gold_labels_sha256"],
+    "gold_frozen_at_utc": gold_manifest.get("frozen_at_utc", ""),
 })
 
 results_dir = ROOT / "results"
@@ -89,6 +98,7 @@ for evidence_id in ordered_ids:
     pred_row = pred_by[evidence_id]
     predicted = pred_row["predicted_label"]
     citation_valid = str(pred_row.get("citation_valid", "")).strip().lower() == "true"
+
     if predicted != gold_row["label"] or not citation_valid:
         errors.append({
             "question_id": gold_row["question_id"],
