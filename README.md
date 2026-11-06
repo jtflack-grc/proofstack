@@ -1,172 +1,213 @@
 # ProofStack
 
+[![CI](https://github.com/jtflack-grc/proofstack/actions/workflows/ci.yml/badge.svg)](https://github.com/jtflack-grc/proofstack/actions/workflows/ci.yml)
+
 **Turn security-questionnaire claims into traceable evidence decisions.**
 
-ProofStack is a human-in-the-loop MMC BUILD capstone for a reviewer who needs to decide whether a security-questionnaire claim is actually supported by the evidence submitted with it.
+ProofStack is a human-in-the-loop evidence-review capstone built for the question that matters after a security questionnaire is answered:
 
-The MVP contains **10 security questions** and **20 synthetic evidence documents**. AI is advisory. The reviewer remains the final authority.
+> **Does the submitted evidence actually prove the claim?**
 
-## Final result
+The MVP contains **10 security questions** and **20 synthetic evidence documents**. Vertex AI provides an advisory assessment, citations are independently grounded against the submitted evidence, and a human reviewer remains the final authority.
 
-The frozen 20-case evaluation used Vertex AI with `gemini-3.8-flash`.
+## Verified result
 
-- **Accuracy:** 95.0% (19/20)
-- **Macro precision:** 95.0%
-- **Macro recall:** 95.45%
-- **Macro F1:** 94.99%
-- **Parse success:** 100% (20/20)
-- **Citation grounding:** 100% (20/20)
-- **Live adversarial probes:** 4/4 passed
-- **Gold set:** 9 SUPPORTED / 11 UNSUPPORTED
+| Measure | Final result |
+|---|---:|
+| Model | `gemini-3.8-flash` on Vertex AI |
+| Frozen evaluation set | 20 cases |
+| Accuracy | **95.0% (19/20)** |
+| Macro precision | **95.0%** |
+| Macro recall | **95.45%** |
+| Macro F1 | **94.99%** |
+| Parse success | **100% (20/20)** |
+| Citation grounding | **100% (20/20)** |
+| Live adversarial probes | **4/4 passed** |
+| Gold labels | 9 SUPPORTED / 11 UNSUPPORTED |
 
-The single model error was Q06 / E12: strong backup/restore evidence from Q3 was incorrectly accepted for a claim requiring evidence from the **current quarter**. The citation was real and the judgment was still wrong.
+The single model error was **Q06 / E12**. The evidence showed successful backups and a successful restore test, but the artifact was scoped to **Q3 2026** while the claim required evidence from the **current quarter (Q4)**. Gemini cited real evidence and still made the wrong judgment.
 
-> **Grounded does not mean correct.**
+> ## Grounded does not mean correct.
 
-That is the central reason ProofStack preserves human judgment.
-
-## What it does
-
-1. Select a questionnaire claim.
-2. Inspect the evidence submitted for that claim.
-3. Ask the configured model for a binary advisory assessment: SUPPORTED or UNSUPPORTED.
-4. Show the model rationale and cited excerpt beside the source evidence.
-5. Independently verify that the cited excerpt is present in the evidence.
-6. Require a human reviewer to record the final decision.
-7. Preserve a traceable decision record for evaluation and review.
-
-ProofStack does **not** certify compliance, invent missing controls, or replace reviewer judgment.
+That failure is the central ProofStack result: citation grounding improves traceability, but it does not replace human interpretation of scope, timing, or control criteria.
 
 ## Reviewer flow
 
 `question → claim → evidence → AI advisory → citation check → human decision → traceable record`
 
-The evidence set intentionally pairs weaker policy/procedure artifacts with stronger operational/configuration artifacts so the reviewer can distinguish control intent from demonstrated operation.
+1. Select a questionnaire claim.
+2. Inspect the submitted evidence.
+3. Ask the configured model for SUPPORTED / UNSUPPORTED.
+4. Show the model rationale and cited excerpt.
+5. Independently verify that the excerpt exists in the evidence.
+6. Require a human reviewer to make the final decision.
+7. Preserve the decision and provenance for later review.
 
-## Live architecture
+ProofStack does **not** certify compliance, invent missing controls, or replace professional judgment.
 
-```text
-Streamlit reviewer UI on Cloud Run
-        ↓
-Vertex AI / Gemini 3.8 Flash
-        ↓
-strict parser + exact citation grounding
-        ↓
-human reviewer decision
-        ↓
-Firestore decision record
+## Architecture
+
+```mermaid
+flowchart LR
+    A[Reviewer] --> B[Streamlit reviewer UI]
+    H[Synthetic question + evidence set] --> B
+    B --> C[Vertex AI<br/>Gemini 3.8 Flash]
+    C --> D[Strict structured parser]
+    D --> E[Citation grounding check]
+    E --> F[Human final decision]
+    F --> G[Firestore decision record]
+
+    subgraph Google Cloud
+      B
+      C
+      G
+    end
 ```
 
-The Cloud Run service is private by default and uses a dedicated runtime service identity rather than a downloaded service-account key.
+The application runs on **Cloud Run**, uses **Vertex AI** for advisory model assessment, and persists reviewer decisions in **Firestore**. The runtime uses a dedicated service identity rather than downloaded service-account keys.
+
+## Evidence design
+
+The synthetic corpus intentionally pairs weaker governance artifacts with stronger operational artifacts.
+
+Example:
+
+- **Claim:** privileged accounts use MFA.
+- **Relevant but weak evidence:** a policy requiring MFA.
+- **Operational evidence:** a production export showing the privileged population and current MFA enrollment state.
+
+The distinction is deliberate: **control intent is not the same thing as demonstrated operation.**
 
 ## Security posture
 
-ProofStack treats both evidence and model output as untrusted boundaries.
+ProofStack treats both submitted evidence and model output as untrusted boundaries.
 
 Implemented controls include:
 
-- evidence explicitly marked as untrusted model input
+- explicit untrusted-evidence prompt boundary
 - dynamic evidence kept out of the static system instruction
 - 20,000-character evidence input limit
-- bounded model output and request timeout/retry behavior
+- bounded model output
+- bounded Vertex request timeout/retry behavior
 - structured Vertex response schema
-- fail-closed parsing for ambiguous output
-- exact/whitespace-normalized citation grounding
-- evidence and model rationale rendered as inert text
-- stale assessment state cleared when the case changes
+- fail-closed parsing
+- exact / whitespace-normalized citation grounding
+- inert rendering of evidence and model rationale
+- assessment state cleared when the evidence case changes
 - reviewer identity required
-- reviewer explanation required when overriding a valid model label
-- model has no tools or approval authority
+- reviewer explanation required for model override
+- no model tools or approval authority
 - private Cloud Run deployment by default
 - dedicated runtime service identity
-- OWASP Top 10:2025 / OWASP GenAI LLM Top 10 2026 / NIST AI RMF mapping
+- OWASP Top 10:2025, OWASP GenAI LLM Top 10 2026, NIST AI RMF, and NIST AI 600-1 mapping
 
-Four live synthetic adversarial probes passed against the final Vertex model: direct label override, fake system prompt, role hijack, and Markdown-like evidence.
+Four live synthetic adversarial probes passed against the final Vertex configuration: direct label override, fake system prompt, role hijack, and Markdown-like evidence.
 
-See `docs/SECURITY.md` and `docs/SECURITY_TEST_MATRIX.md`.
+See [Security posture](docs/SECURITY.md) and [Security test matrix](docs/SECURITY_TEST_MATRIX.md).
 
-## Gold-set integrity
+## Frozen human reference set
 
-The primary reviewer completed all 20 labels before the final model predictions were generated. Each label includes a short human rationale.
+All 20 reference labels were completed before final model scoring. Each contains a human rationale.
 
-After labeling, the set was frozen with SHA-256:
+Frozen gold SHA-256:
 
 `1317a4c5cd1b0d02575d2e54d62d8cc03c7508805dd043cf44dc67e2503d6b74`
 
-The evaluation script verifies the frozen hash before scoring and refuses to evaluate a modified gold set without a deliberate re-freeze.
+The evaluator verifies the frozen hash before scoring and refuses to score a modified reference set without a deliberate re-freeze.
 
-See `results/gold_set_manifest.json`.
+See [gold_set_manifest.json](results/gold_set_manifest.json).
 
-## Evaluation artifacts
+## Final deliverables
 
-- `results/predictions.csv` — all 20 final model predictions
-- `results/run_metadata.json` — provider/model/commit provenance
-- `results/metrics.json` — final classification, parse and citation metrics
-- `results/error_analysis.csv` — disagreement/citation-failure review
-- `results/security_probes.csv` — live adversarial probe results
-- `results/final_summary.md` — human-readable evaluation summary
-- `docs/EVALUATION_RESULTS.md` — documented findings and Q06/E12 analysis
+| Artifact | Repository version |
+|---|---|
+| 3-page project brief | [FINAL_BRIEF.md](deliverables/FINAL_BRIEF.md) |
+| 4–6 page research paper | [RESEARCH_PAPER.md](deliverables/RESEARCH_PAPER.md) |
+| 8-slide presentation content | [FINAL_DECK_CONTENT.md](deliverables/FINAL_DECK_CONTENT.md) |
+| 5-minute demo narration | [FINAL_DEMO_SCRIPT.md](deliverables/FINAL_DEMO_SCRIPT.md) |
+| Contribution record | [CONTRIBUTIONS.md](deliverables/CONTRIBUTIONS.md) |
+| Final results gate | [RESULTS_CHECKLIST.md](deliverables/RESULTS_CHECKLIST.md) |
 
-The 20-case synthetic evaluation is descriptive. It is not a production benchmark or a generalized compliance-accuracy claim.
+The polished PPTX, PDF, and DOCX exports are generated from the same final facts and can be attached to the formal submission package without changing the underlying project record.
+
+## Evaluation record
+
+- [predictions.csv](results/predictions.csv) — all 20 final model predictions
+- [run_metadata.json](results/run_metadata.json) — provider/model/commit provenance
+- [metrics.json](results/metrics.json) — classification, parsing, and citation metrics
+- [error_analysis.csv](results/error_analysis.csv) — the Q06/E12 disagreement
+- [security_probes.csv](results/security_probes.csv) — adversarial live-model probes
+- [final_summary.md](results/final_summary.md) — compact final summary
+- [EVALUATION_RESULTS.md](docs/EVALUATION_RESULTS.md) — findings and interpretation
+
+This is a **20-item synthetic capstone evaluation**. Results are descriptive and are not presented as production performance, certification, or generalized compliance accuracy.
 
 ## SDG 1 context
 
-The BUILD connection to **SDG 1: No Poverty** is intentionally modest. Smaller organizations, nonprofits, and grant applicants can have limited assurance capacity and may face disproportionate evidence-review friction. ProofStack explores whether a transparent review aid can help scarce reviewers focus attention without lowering the assurance standard. The project does not claim direct poverty reduction.
+ProofStack's BUILD connection to **SDG 1: No Poverty** is intentionally modest. Smaller organizations, nonprofits, and grant applicants can have limited assurance capacity and may face disproportionate evidence-review friction. ProofStack explores whether a transparent review aid can focus scarce reviewer attention without lowering the assurance standard. It does not claim direct poverty reduction.
 
-## Quick start
+## Run locally
 
-1. Create a Python 3.11+ virtual environment.
-2. Install requirements: `pip install -r requirements.txt`
-3. Validate the seed data: `python scripts/validate_dataset.py`
-4. Run tests: `pytest -q`
-5. Launch locally: `streamlit run app.py`
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+python scripts/validate_dataset.py
+pytest -q
+streamlit run app.py
+```
 
 The default provider is `mock`, so local development does not require cloud credentials.
 
-## Vertex configuration
+## Vertex / Google Cloud configuration
 
-Primary live settings:
+Verified final configuration:
 
-- `PROOFSTACK_PROVIDER=vertex`
-- `GOOGLE_CLOUD_PROJECT=proofstack-build`
-- `GOOGLE_CLOUD_LOCATION=global`
-- `VERTEX_MODEL=gemini-3.8-flash`
-- `VERTEX_MAX_TOKENS=800`
-- `VERTEX_THINKING_LEVEL=LOW`
-- `VERTEX_TIMEOUT_MS=45000`
-- `VERTEX_RETRY_ATTEMPTS=2`
-- `PROOFSTACK_MAX_EVIDENCE_CHARS=20000`
-- `PROOFSTACK_STORAGE=firestore`
-- `GCP_REGION=us-east1`
-- `FIRESTORE_COLLECTION=proofstack_decisions`
+```text
+PROOFSTACK_PROVIDER=vertex
+GOOGLE_CLOUD_PROJECT=proofstack-build
+GOOGLE_CLOUD_LOCATION=global
+VERTEX_MODEL=gemini-3.8-flash
+VERTEX_MAX_TOKENS=800
+VERTEX_THINKING_LEVEL=LOW
+VERTEX_TIMEOUT_MS=45000
+VERTEX_RETRY_ATTEMPTS=2
+PROOFSTACK_MAX_EVIDENCE_CHARS=20000
+PROOFSTACK_STORAGE=firestore
+GCP_REGION=us-east1
+FIRESTORE_COLLECTION=proofstack_decisions
+```
 
 Never commit API keys, service-account keys, real customer evidence, or personal data.
 
 ## Repository map
 
-- `app.py` — reviewer-facing MVP
-- `src/proofstack/` — schema, prompting, parsing, evaluation, providers, storage
-- `data/questions.json` — 10 questionnaire questions
-- `data/evidence/` — 20 synthetic evidence documents
-- `data/evidence_manifest.csv` — question-to-document mapping
-- `data/gold_labels.csv` — completed human reference labels
-- `docs/SECURITY.md` — threat model and security controls
-- `docs/SECURITY_TEST_MATRIX.md` — OWASP/NIST mapping and acceptance cases
-- `docs/EVALUATION_PLAN.md` — evaluation protocol
-- `docs/EVALUATION_RESULTS.md` — final results and error analysis
-- `docs/GCP_DEPLOYMENT.md` — Cloud Run / Firestore / Vertex deployment
-- `deliverables/` — final brief, research paper, deck content, demo script, contribution record and submission gate
+| Path | Purpose |
+|---|---|
+| `app.py` | reviewer-facing Streamlit MVP |
+| `src/proofstack/` | prompting, parsing, providers, storage, evaluation logic |
+| `data/questions.json` | 10 questionnaire questions |
+| `data/evidence/` | 20 synthetic evidence artifacts |
+| `data/gold_labels.csv` | frozen human reference labels |
+| `docs/` | security, evaluation, deployment, and methodology |
+| `results/` | frozen evaluation and security-test evidence |
+| `deliverables/` | submission-ready written artifacts and presentation content |
 
 ## Contribution record
 
-The final contingency implementation was completed by John Flack. Team discussion contributions are recorded separately and are not represented as repository work unless they were actually delivered.
+The final contingency implementation, cloud integration, hardening, labeling/evaluation, and packaging were completed by **John Flack**. Team discussion contributions are recorded separately and are not represented as repository work unless they were actually delivered.
 
-See `deliverables/CONTRIBUTIONS.md`.
+See [CONTRIBUTIONS.md](deliverables/CONTRIBUTIONS.md).
 
-## Optional NVIDIA adapter
+## Verified vs. not claimed
 
-The repository retains an NVIDIA OpenAI-compatible provider and readiness script. NVIDIA is **not** part of the verified final architecture and did not block the capstone.
+**Verified:** Cloud Run, Vertex AI, Firestore persistence, frozen human labels, final metrics, citation grounding, adversarial probes, CI.
 
-## Status
+**Not claimed:** compliance certification, production readiness, generalized accuracy, NVIDIA integration, external-hackathon participation, or equal team implementation contribution.
 
-See `STATUS.md`.
+## Project status
+
+The substantive build, security verification, frozen evaluation, and submission artifacts are complete. The only deployment housekeeping item is a final Cloud Run redeploy so the hosted revision matches the finished repository.
+
+See [STATUS.md](STATUS.md).
