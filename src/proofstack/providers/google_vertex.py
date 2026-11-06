@@ -48,14 +48,13 @@ class GoogleVertexProvider(ModelProvider):
                 "VERTEX_MODEL is not configured. Set it to a model available in the project."
             )
 
-        try:
-            thinking_level = types.ThinkingLevel[self.thinking_level]
-        except KeyError as exc:
+        allowed_thinking_levels = {"LOW", "MEDIUM", "HIGH"}
+        if self.thinking_level not in allowed_thinking_levels:
             raise RuntimeError(
-                "VERTEX_THINKING_LEVEL must be LOW, MEDIUM, or HIGH for the configured Gemini 3.x model."
-            ) from exc
+                "VERTEX_THINKING_LEVEL must be LOW, MEDIUM, or HIGH for Gemini 3.8 Flash."
+            )
 
-        self._thinking_level = thinking_level
+        self._thinking_level = types.ThinkingLevel[self.thinking_level]
         self.client = genai.Client(
             vertexai=True,
             project=self.project,
