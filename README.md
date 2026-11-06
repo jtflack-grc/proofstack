@@ -66,7 +66,7 @@ The intended live provider for the contingency build is Vertex AI / Gemini using
 5. Set `PROOFSTACK_PROVIDER=vertex`.
 6. Deploy with `bash scripts/deploy_cloud_run.sh`.
 
-The smoke test uses synthetic data only.
+The smoke test uses synthetic data only. The contingency build has been live-tested with `gemini-3.8-flash` in project `proofstack-build`.
 
 ## Optional NVIDIA adapter
 
@@ -85,7 +85,9 @@ Primary contingency settings:
 - GOOGLE_CLOUD_PROJECT=
 - GOOGLE_CLOUD_LOCATION=global
 - VERTEX_MODEL=
-- VERTEX_MAX_TOKENS=350
+- VERTEX_MAX_TOKENS=800
+- VERTEX_THINKING_LEVEL=LOW
+- PROOFSTACK_MAX_EVIDENCE_CHARS=20000
 - PROOFSTACK_STORAGE=local or firestore
 - GCP_PROJECT_ID=
 - GCP_REGION=us-east1
@@ -109,7 +111,13 @@ Never commit API keys, service-account keys, real customer evidence, or personal
 - `docs/GCP_DEPLOYMENT.md` — Cloud Run / Firestore / Vertex deployment
 - `docs/EVALUATION_PLAN.md` — evaluation protocol
 - `docs/SECURITY.md` — threat model and security expectations
+- `docs/SECURITY_TEST_MATRIX.md` — OWASP/NIST-aligned security mapping and acceptance cases
+- `scripts/run_security_probes.py` — live synthetic prompt-injection/output-handling regression
 - `deliverables/` — brief, deck, demo and final-results scaffolds
+
+## Security posture
+
+ProofStack treats submitted evidence and model output as separate untrusted boundaries. Evidence is displayed as inert text, model responses use structured output where supported, citations are independently grounded, oversized evidence fails closed, and the model has no tools or approval authority. The security lane maps relevant controls to OWASP Top 10:2025, the OWASP GenAI LLM Top 10 2026, and NIST AI RMF / NIST AI 600-1 without claiming certification.
 
 ## Human authority
 
