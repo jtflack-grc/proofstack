@@ -2,60 +2,70 @@
   {
     "question_id": "Q01",
     "question": "Do privileged user accounts require multi-factor authentication (MFA)?",
+    "reviewer_friendly_question": "Do all privileged accounts use MFA when signing in to production systems?",
     "claim": "Privileged user accounts are protected by MFA in the production environment.",
     "reviewer_hint": "Look for operational evidence of privileged accounts and MFA state, not only a policy requirement."
   },
   {
     "question_id": "Q02",
     "question": "Are terminated user accounts disabled within 24 hours of termination?",
+    "reviewer_friendly_question": "When someone leaves, is their account disabled within 24 hours?",
     "claim": "Accounts for terminated personnel are disabled within 24 hours of the recorded termination time.",
     "reviewer_hint": "Look for joined HR/IAM timestamps or comparable operational records."
   },
   {
     "question_id": "Q03",
     "question": "Are privileged access rights reviewed at least quarterly?",
+    "reviewer_friendly_question": "Was privileged access reviewed during the most recent quarter?",
     "claim": "A privileged-access review was completed for the most recent quarter.",
     "reviewer_hint": "Look for a completed review with date, population, reviewer and disposition."
   },
   {
     "question_id": "Q04",
     "question": "Is sensitive production data encrypted at rest?",
+    "reviewer_friendly_question": "Is sensitive production data encrypted while it is stored?",
     "claim": "Sensitive production data is stored using encryption at rest.",
     "reviewer_hint": "Look for configuration or system-generated evidence, not only an encryption standard."
   },
   {
     "question_id": "Q05",
     "question": "Is external application traffic protected with TLS 1.2 or higher?",
+    "reviewer_friendly_question": "Does the public application block TLS versions older than 1.2?",
     "claim": "The public application endpoint rejects TLS versions below 1.2.",
     "reviewer_hint": "Look for scanner output or endpoint configuration showing permitted protocol versions."
   },
   {
     "question_id": "Q06",
     "question": "Are critical systems backed up daily and restore-tested at least quarterly?",
+    "reviewer_friendly_question": "Do critical systems have successful daily backups and a successful restore test this quarter?",
     "claim": "Critical systems have successful daily backups and a successful restore test in the current quarter.",
     "reviewer_hint": "Both backup operation and restore testing need evidence."
   },
   {
     "question_id": "Q07",
     "question": "Are critical vulnerabilities remediated within the defined SLA?",
+    "reviewer_friendly_question": "Are critical vulnerabilities fixed within 30 days?",
     "claim": "Critical vulnerabilities are tracked and remediated within a 30-day SLA.",
     "reviewer_hint": "Look for operational vulnerability/ticket records with dates and severity."
   },
   {
     "question_id": "Q08",
     "question": "Are security logs centrally retained and monitored?",
+    "reviewer_friendly_question": "Are production security logs kept centrally for at least 90 days and actively monitored?",
     "claim": "Production security logs are centrally retained for at least 90 days and generate monitored alerts.",
     "reviewer_hint": "Look for retention configuration plus evidence that alerting is active."
   },
   {
     "question_id": "Q09",
     "question": "Has the incident response process been exercised in the last 12 months?",
+    "reviewer_friendly_question": "Has the incident-response process been exercised within the last 12 months?",
     "claim": "The organization completed an incident-response tabletop exercise within the last 12 months.",
     "reviewer_hint": "A plan alone does not prove an exercise occurred."
   },
   {
     "question_id": "Q10",
     "question": "Is third-party administrative access approved, MFA-protected, and time-bounded?",
+    "reviewer_friendly_question": "Does third-party admin access require approval, MFA, and an expiration time?",
     "claim": "Third-party administrative access requires approval, MFA, and an explicit expiration time.",
     "reviewer_hint": "Look for an actual access record showing all three elements."
   }
