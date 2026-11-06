@@ -55,15 +55,23 @@ The currently deployed Cloud Run revision predates the latest UX/security-harden
 - final brief / deck / demo scaffolds
 - CI
 
-## Remaining substantive work
+## Final evaluation completed — November 6, 2026
 
-1. Complete and freeze the 20 manual gold labels.
-2. Run `python scripts/run_security_probes.py` against the final Vertex model and retain the result.
-3. Run the final 20-case model evaluation only after gold labels are frozen.
-4. Review false positives, false negatives, parse failures, and citation failures.
-5. Update the brief, deck, demo script, and results checklist from the verified results.
-6. Redeploy the final branch revision before the demo.
-7. Reconcile the final team contribution record with work actually delivered.
+- gold set completed and frozen: 20/20
+- gold distribution: 9 SUPPORTED / 11 UNSUPPORTED
+- live security probes: 4/4 passed
+- final Vertex evaluation: 19/20 correct (95% accuracy)
+- macro F1: 94.99%
+- parse success: 100%
+- citation grounding: 100%
+- single error: Q06 / E12 false support caused by missed current-quarter scope
+- detailed results: `docs/EVALUATION_RESULTS.md`
+
+## Remaining delivery work
+
+1. Update the brief, deck, demo script, and results checklist from the verified results.
+2. Redeploy the final branch revision before the demo.
+3. Reconcile the final team contribution record with work actually delivered.
 
 ## Optional only
 
