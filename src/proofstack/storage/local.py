@@ -1,13 +1,40 @@
 import csv
 from pathlib import Path
 
-HEADER = ["timestamp_utc","question_id","evidence_id","model_label","reviewer_label","reviewer","notes"]
+
+HEADER = [
+    "timestamp_utc",
+    "question_id",
+    "evidence_id",
+    "evidence_title",
+    "artifact_type",
+    "provider",
+    "model_id",
+    "model_label",
+    "model_rationale",
+    "cited_excerpt",
+    "citation_valid",
+    "reviewer_label",
+    "reviewer",
+    "notes",
+]
+
 
 def append_decision(row: dict, path="local_decisions.csv"):
     target = Path(path)
     new = not target.exists()
+
+    if not new:
+        with target.open("r", newline="", encoding="utf-8") as f:
+            existing_header = next(csv.reader(f), [])
+        if existing_header != HEADER:
+            raise RuntimeError(
+                "Existing local decision log uses an older schema. "
+                "Rename or remove local_decisions.csv before continuing."
+            )
+
     with target.open("a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=HEADER)
         if new:
             writer.writeheader()
-        writer.writerow({k: row.get(k, "") for k in HEADER})
+        writer.writerow({key: row.get(key, "") for key in HEADER})

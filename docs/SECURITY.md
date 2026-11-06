@@ -1,42 +1,168 @@
 # Security and threat model
 
+## Security objective
+
+ProofStack is intentionally non-agentic. It reviews evidence and recommends a binary label; it does not execute tools, alter controls, approve access, or certify compliance. The security objective is to keep evidence, model output, reviewer authority, and cloud permissions in separate trust boundaries.
+
+The detailed framework/test mapping is in `docs/SECURITY_TEST_MATRIX.md`.
+
 ## Data boundary
+
 All committed evidence is synthetic. Do not upload or commit real organizational evidence, credentials, customer data, employee data or confidential questionnaire responses.
 
-## Primary threats
+## Trust boundaries
+
+### Evidence is untrusted input
+
+Evidence may contain text that resembles instructions to the model. It remains data. It cannot change application permissions, select providers, write records, call tools, or authorize a decision.
+
+Controls:
+- model prompt explicitly marks evidence as untrusted
+- dynamic evidence is kept out of the static Vertex system instruction
+- evidence sent to a model is capped by `PROOFSTACK_MAX_EVIDENCE_CHARS`
+- instruction-like phrases are surfaced to the reviewer
+- evidence is displayed as plain text rather than rendered Markdown/HTML
+
+### Model output is untrusted advisory output
+
+A valid model label does not make the underlying rationale or citation trustworthy.
+
+Controls:
+- Vertex uses a response schema with a two-value label enum
+- parser ambiguity fails closed to UNPARSEABLE
+- exact/whitespace-normalized citation grounding is checked independently
+- rationale is displayed as inert text and the citation as code
+- model/provider metadata is retained for evaluation
+
+### Human decision is authoritative
+
+The reviewer makes the final SUPPORTED/UNSUPPORTED decision. When the reviewer overrides a valid model label, ProofStack requires a note to preserve the reason for disagreement.
+
+## Primary threats and controls
 
 ### Secret exposure
-Risk: API keys or service-account material enter Git history.
-Controls: environment variables/secret store, gitignore patterns, PR review, no secrets in screenshots.
+
+Risk: API keys or service-account material enter Git history or model prompts.
+
+Controls:
+- Application Default Credentials for Vertex and Cloud Run
+- no downloaded service-account keys
+- synthetic-only evidence boundary
+- repository review before demo
+- no secrets in screenshots
+- private Cloud Run by default
 
 ### Prompt injection in evidence
-Risk: an evidence document contains text that tries to instruct the model or application.
-Controls: system prompt states evidence is untrusted data; model has no tools/actions; reviewer sees source evidence; output remains advisory.
+
+Risk: evidence contains text such as "ignore previous instructions", fake system prompts, role hijacks, or requested labels.
+
+Controls:
+- evidence is explicitly marked as untrusted in the prompt and system instruction
+- model has no external tools or approval authority
+- reviewer sees the source evidence
+- UI warns when instruction-like phrases are detected
+- adversarial unit tests
+- live synthetic provider probes in `scripts/run_security_probes.py`
+
+### Hallucinated citation
+
+Risk: model returns an excerpt not found in the evidence.
+
+Controls:
+- exact/whitespace-normalized citation grounding
+- failed citations are visibly marked invalid
+- batch evaluation records `citation_valid`
+- reviewer remains authoritative
 
 ### Unsupported model confidence
+
 Risk: model asserts support not present in evidence.
-Controls: require cited excerpt, strict binary parser, human final decision, evaluation against manual labels.
+
+Controls:
+- structured Vertex response schema
+- binary parser fails closed on ambiguity
+- human final decision
+- final evaluation against a manually frozen gold set
+- live adversarial probes
+
+### Unbounded model consumption
+
+Risk: oversized evidence or repeated use increases cost and attack surface.
+
+Controls:
+- default 20,000-character model-input cap
+- bounded provider output tokens
+- small fixed synthetic evaluation corpus
+- private capstone deployment
+
+Residual risk: no general user-level rate limiter is implemented.
 
 ### Evidence/claim mismatch
+
 Risk: document is mapped to the wrong question.
-Controls: explicit manifest, IDs shown in UI/logs, validation script checks mappings.
+
+Controls:
+- explicit manifest
+- question/evidence IDs in records
+- validation script checks 10 questions, 20 unique evidence IDs and paths, and exactly two documents per question
+
+### Stale assessment crossing cases
+
+Risk: assessment for one evidence item is accidentally written against another.
+
+Controls:
+- assessment state is bound to question_id + evidence_id
+- switching cases clears stale model state
+- unit tests cover question/evidence mismatch
 
 ### Decision-log integrity
-Risk: final decisions cannot be traced or are overwritten.
-Controls: append-style local logging for development; Firestore record IDs/timestamps for cloud demo; reviewer identity field.
+
+Risk: final decisions cannot be traced or reviewer overrides are unexplained.
+
+Controls:
+- append-style local logging
+- Firestore server timestamps in cloud mode
+- reviewer identity required
+- override note required
+- provider/model, rationale, cited excerpt and citation-valid flag retained
 
 ### Excess permissions
-Risk: cloud identity has unnecessary access.
-Controls: least privilege, separate runtime identity, only required Storage/Firestore permissions.
 
-## Abuse cases to test
-- evidence says "ignore prior instructions"
-- model returns prose without a valid label
-- model cites text not present in evidence
-- missing API key
-- missing evidence file
-- invalid question/evidence mapping
-- reviewer submits without a final decision
+Risk: cloud runtime identity has unnecessary access.
+
+Controls:
+- dedicated user-managed Cloud Run service identity
+- `roles/datastore.user` for Firestore
+- `roles/aiplatform.user` for Vertex
+- no Owner/Editor runtime grant
+- model has no application tools
+
+## Abuse/regression coverage
+
+Automated tests cover:
+- direct prompt-injection language
+- fake system/developer instructions
+- role-hijack language
+- embedded and malformed model output
+- ambiguous SUPPORTED/UNSUPPORTED text
+- hallucinated citation
+- oversized evidence
+- stale assessment context
+- reviewer missing identity
+- human override without explanation
+- provider configuration and malformed-response failure
+- Firestore configuration behavior
+- Vertex structured-output configuration and empty response handling
 
 ## Deployment review
-Before public demo: verify no secrets in repo/history, confirm IAM, verify synthetic-only dataset, test error handling, and document known limitations.
+
+Before final demo:
+- verify no secrets in repo/history
+- confirm IAM remains least privilege
+- verify synthetic-only dataset
+- run CI
+- run the selected live-provider smoke test
+- run live security probes
+- verify Firestore persistence
+- rehearse one weak-evidence and one strong-evidence case
+- document known limitations

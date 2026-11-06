@@ -30,7 +30,7 @@ Show the reviewer flow:
 1. select claim
 2. inspect evidence
 3. receive AI advisory assessment
-4. see rationale + cited excerpt
+4. verify rationale + cited excerpt
 5. human reviewer accepts/overrides
 6. decision is logged
 
@@ -53,14 +53,14 @@ Insert final labeling status:
 Keep this diagram simple:
 
 Streamlit reviewer UI
-→ NVIDIA model provider
-→ strict parser
+→ Vertex AI / Gemini
+→ strict parser + citation grounding
 → human decision
 → Firestore
 
-Cloud Run around application.
+Cloud Run around the application.
 
-Optional Secret Manager callout for NVIDIA API key.
+Dedicated service identity underneath.
 
 Do not add services that are not actually used.
 
@@ -68,10 +68,11 @@ Do not add services that are not actually used.
 Only populate after final evaluation.
 
 Show:
+- model ID
 - accuracy
 - macro F1
 - parse success
-- 2x2 confusion matrix
+- confusion matrix
 
 Add one sentence:
 With n=20, these are descriptive results, not production-performance claims.
