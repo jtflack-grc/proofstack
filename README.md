@@ -47,22 +47,7 @@ ProofStack does **not** certify compliance, invent missing controls, or replace 
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    A["Reviewer"] --> B["Streamlit reviewer UI"]
-    H["Synthetic question + evidence set"] --> B
-    B --> C["Vertex AI / Gemini 3.8 Flash"]
-    C --> D["Strict structured parser"]
-    D --> E["Citation grounding check"]
-    E --> F["Human final decision"]
-    F --> G["Firestore decision record"]
-
-    subgraph cloud["Google Cloud"]
-        B
-        C
-        G
-    end
-```
+![ProofStack architecture](docs/images/proofstack-architecture.svg)
 
 The application runs on **Cloud Run**, uses **Vertex AI** for advisory model assessment, and persists reviewer decisions in **Firestore**. The runtime uses a dedicated service identity rather than downloaded service-account keys.
 
