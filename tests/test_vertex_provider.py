@@ -48,7 +48,25 @@ def test_vertex_rejects_invalid_thinking_level(monkeypatch):
         google_vertex.GoogleVertexProvider()
 
 
-def test_vertex_uses_adc_project_location_model_and_schema(monkeypatch):
+def test_vertex_rejects_invalid_timeout(monkeypatch):
+    monkeypatch.setenv("GCP_PROJECT_ID", "proofstack-test")
+    monkeypatch.setenv("VERTEX_MODEL", "test-model")
+    monkeypatch.setenv("VERTEX_TIMEOUT_MS", "0")
+
+    with pytest.raises(RuntimeError, match="VERTEX_TIMEOUT_MS"):
+        google_vertex.GoogleVertexProvider()
+
+
+def test_vertex_rejects_invalid_retry_count(monkeypatch):
+    monkeypatch.setenv("GCP_PROJECT_ID", "proofstack-test")
+    monkeypatch.setenv("VERTEX_MODEL", "test-model")
+    monkeypatch.setenv("VERTEX_RETRY_ATTEMPTS", "0")
+
+    with pytest.raises(RuntimeError, match="VERTEX_RETRY_ATTEMPTS"):
+        google_vertex.GoogleVertexProvider()
+
+
+def test_vertex_uses_adc_project_location_model_schema_and_http_bounds(monkeypatch):
     created = {}
 
     def fake_client(**kwargs):
@@ -59,6 +77,8 @@ def test_vertex_uses_adc_project_location_model_and_schema(monkeypatch):
     monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "global")
     monkeypatch.setenv("VERTEX_MODEL", "test-model")
     monkeypatch.setenv("VERTEX_THINKING_LEVEL", "LOW")
+    monkeypatch.setenv("VERTEX_TIMEOUT_MS", "45000")
+    monkeypatch.setenv("VERTEX_RETRY_ATTEMPTS", "2")
     monkeypatch.setattr(google_vertex.genai, "Client", fake_client)
 
     provider = google_vertex.GoogleVertexProvider()
@@ -69,13 +89,15 @@ def test_vertex_uses_adc_project_location_model_and_schema(monkeypatch):
     )
 
     assert '"label":"SUPPORTED"' in raw
-    assert created["client"].init_kwargs == {
-        "vertexai": True,
-        "project": "proofstack-test",
-        "location": "global",
-    }
-    assert created["client"].models.kwargs["model"] == "test-model"
+    assert created["client"].init_kwargs["vertexai"] is True
+    assert created["client"].init_kwargs["project"] == "proofstack-test"
+    assert created["client"].init_kwargs["location"] == "global"
 
+    http_options = created["client"].init_kwargs["http_options"]
+    assert http_options.timeout == 45000
+    assert http_options.retry_options.attempts == 2
+
+    assert created["client"].models.kwargs["model"] == "test-model"
     config = created["client"].models.kwargs["config"]
     assert config.response_mime_type == "application/json"
     assert config.response_schema == google_vertex.ASSESSMENT_SCHEMA

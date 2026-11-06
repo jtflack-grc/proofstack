@@ -17,6 +17,13 @@ def utc_now():
     return datetime.now(timezone.utc).isoformat()
 
 
+def write_rows(path, rows, fieldnames):
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 questions = {
     q["question_id"]: q
     for q in json.loads((ROOT / "data/questions.json").read_text(encoding="utf-8"))
@@ -29,14 +36,52 @@ provider = get_provider()
 model_id = getattr(provider, "model", "") or provider_name
 run_started_utc = utc_now()
 
+results_dir = ROOT / "results"
+results_dir.mkdir(exist_ok=True)
+predictions_path = results_dir / "predictions.csv"
+partial_path = results_dir / "predictions.partial.csv"
+
+fieldnames = [
+    "run_started_utc",
+    "provider",
+    "model_id",
+    "question_id",
+    "evidence_id",
+    "title",
+    "artifact_type",
+    "predicted_label",
+    "parse_status",
+    "rationale",
+    "cited_excerpt",
+    "citation_valid",
+    "raw_output",
+]
+
 rows = []
-for item in evidence:
+total = len(evidence)
+
+for index, item in enumerate(evidence, start=1):
     evidence_text = (ROOT / item["path"]).read_text(encoding="utf-8")
-    raw = provider.assess(
-        questions[item["question_id"]],
-        item,
-        evidence_text,
+    print(
+        f"[{index}/{total}] {item['evidence_id']} · {item.get('title', '')} — sending to {model_id}",
+        flush=True,
     )
+
+    try:
+        raw = provider.assess(
+            questions[item["question_id"]],
+            item,
+            evidence_text,
+        )
+    except Exception:
+        if rows:
+            write_rows(partial_path, rows, fieldnames)
+            print(
+                f"Saved {len(rows)} completed case(s) to {partial_path.relative_to(ROOT)} before failure.",
+                flush=True,
+            )
+        raise
+
     parsed = parse_model_output(raw)
     citation_valid = citation_is_grounded(parsed.cited_excerpt, evidence_text)
 
@@ -56,29 +101,16 @@ for item in evidence:
         "raw_output": raw,
     })
 
-results_dir = ROOT / "results"
-results_dir.mkdir(exist_ok=True)
+    write_rows(partial_path, rows, fieldnames)
+    print(
+        f"[{index}/{total}] {item['evidence_id']} — "
+        f"{parsed.label} · parse={parsed.parse_status} · citation_grounded={citation_valid}",
+        flush=True,
+    )
 
-predictions_path = results_dir / "predictions.csv"
-fieldnames = [
-    "run_started_utc",
-    "provider",
-    "model_id",
-    "question_id",
-    "evidence_id",
-    "title",
-    "artifact_type",
-    "predicted_label",
-    "parse_status",
-    "rationale",
-    "cited_excerpt",
-    "citation_valid",
-    "raw_output",
-]
-with predictions_path.open("w", newline="", encoding="utf-8") as f:
-    writer = csv.DictWriter(f, fieldnames=fieldnames)
-    writer.writeheader()
-    writer.writerows(rows)
+write_rows(predictions_path, rows, fieldnames)
+if partial_path.exists():
+    partial_path.unlink()
 
 metadata = {
     "run_started_utc": run_started_utc,
@@ -92,5 +124,6 @@ metadata = {
 metadata_path = results_dir / "run_metadata.json"
 metadata_path.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
 
+print(f"Completed {len(rows)}/{total} cases.", flush=True)
 print(predictions_path)
 print(metadata_path)

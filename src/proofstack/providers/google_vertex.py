@@ -38,6 +38,8 @@ class GoogleVertexProvider(ModelProvider):
         self.model = os.getenv("VERTEX_MODEL", "").strip()
         self.max_tokens = int(os.getenv("VERTEX_MAX_TOKENS", "800"))
         self.thinking_level = os.getenv("VERTEX_THINKING_LEVEL", "LOW").strip().upper()
+        self.timeout_ms = int(os.getenv("VERTEX_TIMEOUT_MS", "45000"))
+        self.retry_attempts = int(os.getenv("VERTEX_RETRY_ATTEMPTS", "2"))
 
         if not self.project:
             raise RuntimeError(
@@ -47,6 +49,10 @@ class GoogleVertexProvider(ModelProvider):
             raise RuntimeError(
                 "VERTEX_MODEL is not configured. Set it to a model available in the project."
             )
+        if self.timeout_ms <= 0:
+            raise RuntimeError("VERTEX_TIMEOUT_MS must be greater than zero.")
+        if self.retry_attempts < 1:
+            raise RuntimeError("VERTEX_RETRY_ATTEMPTS must be at least 1.")
 
         allowed_thinking_levels = {"LOW", "MEDIUM", "HIGH"}
         if self.thinking_level not in allowed_thinking_levels:
@@ -59,6 +65,16 @@ class GoogleVertexProvider(ModelProvider):
             vertexai=True,
             project=self.project,
             location=self.location,
+            http_options=types.HttpOptions(
+                timeout=self.timeout_ms,
+                retry_options=types.HttpRetryOptions(
+                    attempts=self.retry_attempts,
+                    initial_delay=1.0,
+                    max_delay=2.0,
+                    exp_base=2.0,
+                    jitter=0.0,
+                ),
+            ),
         )
 
     def assess(self, question: dict, evidence: dict, evidence_text: str) -> str:
@@ -84,7 +100,10 @@ class GoogleVertexProvider(ModelProvider):
                 config=config,
             )
         except Exception as exc:
-            raise RuntimeError(f"Vertex AI request failed: {exc}") from exc
+            raise RuntimeError(
+                f"Vertex AI request failed after at most {self.retry_attempts} attempt(s) "
+                f"with a {self.timeout_ms} ms request timeout: {exc}"
+            ) from exc
 
         text = getattr(response, "text", None)
         if not isinstance(text, str) or not text.strip():
