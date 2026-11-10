@@ -27,6 +27,7 @@ Contributions included:
 ## Hans Rony
 
 - Participated in early project, product, and UI discussions.
+- Delivered reviewer-workflow and readability improvements, including the review queue, decision-history view, prior-decision visibility, clearer reviewer guidance, Streamlit theme configuration, and decision-log read support for local and Firestore storage.
 
 ## Kristan Mack
 
