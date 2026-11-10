@@ -1,5 +1,4 @@
 import csv
-import html
 import json
 import os
 import sys
@@ -19,26 +18,6 @@ from proofstack.review_state import assessment_matches_case, reviewer_submission
 from proofstack.storage import load_decisions, save_decision
 
 st.set_page_config(page_title="ProofStack", page_icon="🧾", layout="wide")
-
-st.markdown("""
-<style>
-:root{--ps-ink:#17212b;--ps-muted:#586675;--ps-paper:#f4f6f8}
-.stApp{background:var(--ps-paper);color:var(--ps-ink)}
-.block-container{max-width:1440px;padding:1.4rem clamp(1rem,3vw,3rem) 4rem}
-html,body,[data-testid="stAppViewContainer"],.stMarkdown,.stText,[data-testid="stCaptionContainer"]{color:var(--ps-ink)!important}
-[data-testid="stCaptionContainer"]{color:#465463!important}
-[data-testid="stWidgetLabel"] p,[data-testid="stWidgetLabel"] label,[data-testid="stWidgetLabel"]{color:#263442!important;opacity:1!important}
-[data-testid="stAlert"]{background:#e8f0f5!important;color:#17212b!important;border:1px solid #b9c9d6!important}
-[data-testid="stAlert"] p,[data-testid="stAlert"] div{color:#17212b!important}
-[data-testid="stText"]{color:#17212b!important}
-input,textarea,[data-baseweb="select"]>div{color:#17212b!important}
-[data-baseweb="select"]>div{background:#243344!important;border-color:#657587!important}
-[data-baseweb="select"] span,[data-baseweb="select"] div,[data-baseweb="select"] input{color:#fff!important;-webkit-text-fill-color:#fff!important}
-.ps-claim-panel{background:#e8f0f5;border:1px solid #afc2d0;border-left:4px solid #176b5b;border-radius:8px;padding:16px 18px;color:#17212b!important;line-height:1.6}
-*:focus-visible{outline:3px solid #176b9a!important;outline-offset:2px}
-@media(max-width:760px){.block-container{padding:1rem .85rem 3rem}[data-testid="stHorizontalBlock"]{flex-direction:column;gap:.75rem}.stButton button{min-height:44px}}
-</style>
-""", unsafe_allow_html=True)
 
 
 DECISION_LABELS = {
@@ -120,7 +99,7 @@ st.caption(f'Original questionnaire wording: {question["question"]}')
 claim_col, guidance_col = st.columns([3, 2])
 with claim_col:
     st.markdown("**Claim to verify**")
-    st.markdown(f'<div class="ps-claim-panel">{html.escape(question["claim"])}</div>', unsafe_allow_html=True)
+    st.info(question["claim"])
 with guidance_col:
     st.markdown("**What good evidence looks like**")
     st.write(question.get("reviewer_hint", ""))
