@@ -18,6 +18,8 @@ from proofstack.providers import get_provider
 from proofstack.review_state import assessment_matches_case, reviewer_submission_errors
 from proofstack.storage import load_decisions, save_decision
 
+st.set_page_config(page_title="ProofStack", page_icon="🧾", layout="wide")
+
 st.markdown("""
 <style>
 :root{--ps-ink:#17212b;--ps-muted:#586675;--ps-paper:#f4f6f8}
@@ -65,7 +67,6 @@ except Exception as exc:
     storage_read_error = str(exc)
 latest_decision = {row.get("evidence_id"): row for row in saved_decisions}
 
-st.set_page_config(page_title="ProofStack", page_icon="🧾", layout="wide")
 st.title("ProofStack")
 st.caption(
     "Review a security claim against the evidence submitted for it. "
