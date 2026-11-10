@@ -1,4 +1,5 @@
 import csv
+import html
 import json
 import os
 import sys
@@ -15,7 +16,27 @@ from proofstack.evidence import citation_is_grounded, instruction_like_signals
 from proofstack.parser import parse_model_output
 from proofstack.providers import get_provider
 from proofstack.review_state import assessment_matches_case, reviewer_submission_errors
-from proofstack.storage import save_decision
+from proofstack.storage import load_decisions, save_decision
+
+st.markdown("""
+<style>
+:root{--ps-ink:#17212b;--ps-muted:#586675;--ps-paper:#f4f6f8}
+.stApp{background:var(--ps-paper);color:var(--ps-ink)}
+.block-container{max-width:1440px;padding:1.4rem clamp(1rem,3vw,3rem) 4rem}
+html,body,[data-testid="stAppViewContainer"],.stMarkdown,.stText,[data-testid="stCaptionContainer"]{color:var(--ps-ink)!important}
+[data-testid="stCaptionContainer"]{color:#465463!important}
+[data-testid="stWidgetLabel"] p,[data-testid="stWidgetLabel"] label,[data-testid="stWidgetLabel"]{color:#263442!important;opacity:1!important}
+[data-testid="stAlert"]{background:#e8f0f5!important;color:#17212b!important;border:1px solid #b9c9d6!important}
+[data-testid="stAlert"] p,[data-testid="stAlert"] div{color:#17212b!important}
+[data-testid="stText"]{color:#17212b!important}
+input,textarea,[data-baseweb="select"]>div{color:#17212b!important}
+[data-baseweb="select"]>div{background:#243344!important;border-color:#657587!important}
+[data-baseweb="select"] span,[data-baseweb="select"] div,[data-baseweb="select"] input{color:#fff!important;-webkit-text-fill-color:#fff!important}
+.ps-claim-panel{background:#e8f0f5;border:1px solid #afc2d0;border-left:4px solid #176b5b;border-radius:8px;padding:16px 18px;color:#17212b!important;line-height:1.6}
+*:focus-visible{outline:3px solid #176b9a!important;outline-offset:2px}
+@media(max-width:760px){.block-container{padding:1rem .85rem 3rem}[data-testid="stHorizontalBlock"]{flex-direction:column;gap:.75rem}.stButton button{min-height:44px}}
+</style>
+""", unsafe_allow_html=True)
 
 
 DECISION_LABELS = {
@@ -36,6 +57,13 @@ def load_manifest():
 questions = load_questions()
 manifest = load_manifest()
 q_by_id = {q["question_id"]: q for q in questions}
+try:
+    saved_decisions = load_decisions()
+    storage_read_error = ""
+except Exception as exc:
+    saved_decisions = []
+    storage_read_error = str(exc)
+latest_decision = {row.get("evidence_id"): row for row in saved_decisions}
 
 st.set_page_config(page_title="ProofStack", page_icon="🧾", layout="wide")
 st.title("ProofStack")
@@ -45,20 +73,39 @@ st.caption(
 )
 
 with st.sidebar:
-    st.header("Reviewer checklist")
-    st.write("1. Read the claim.")
-    st.write("2. Inspect the evidence.")
-    st.write("3. Run the AI assessment.")
-    st.write("4. Verify the cited excerpt.")
-    st.write("5. Record your decision.")
+    st.header("Review queue")
+    st.caption("Claim → evidence → advisory → your decision")
+    done_docs = len(set(latest_decision) & {row["evidence_id"] for row in manifest})
+    st.metric("Documents decided", f"{done_docs} / {len(manifest)}")
+    status_filter = st.radio("Show claims", ["All", "Needs review", "Completed"], horizontal=True)
     st.divider()
     st.caption(
         "Synthetic evidence only. ProofStack is a review aid and does not certify compliance."
     )
 
+question_ids = [q["question_id"] for q in questions]
+if storage_read_error:
+    st.sidebar.warning(f"Could not load decision history: {storage_read_error}")
+if status_filter != "All":
+    question_ids = [qid for qid in question_ids if (lambda docs: bool(docs) and (all(doc["evidence_id"] in latest_decision for doc in docs) == (status_filter == "Completed")))([row for row in manifest if row["question_id"] == qid])]
+if not question_ids:
+    question_ids = [q["question_id"] for q in questions]
+
+with st.expander("Decision history", expanded=False):
+    st.subheader("Reviewer decision history")
+    st.caption("Each entry preserves the reviewer label, advisory context, and evidence reference at the time of review.")
+    if saved_decisions:
+        st.dataframe(
+            [{"Recorded (UTC)": r.get("timestamp_utc", ""), "Claim": r.get("question_id", ""), "Document": r.get("evidence_title", r.get("evidence_id", "")), "Reviewer decision": r.get("reviewer_label", ""), "Advisory": r.get("model_label", "—") or "—", "Reviewer": r.get("reviewer", ""), "Notes": r.get("notes", "")} for r in reversed(saved_decisions)],
+            width="stretch",
+            hide_index=True,
+        )
+    else:
+        st.info("No reviewer decisions have been recorded yet. Saved decisions will appear here.")
+
 q_id = st.selectbox(
     "Security question",
-    [q["question_id"] for q in questions],
+    question_ids,
     format_func=lambda value: (
         f'{value} — '
         f'{q_by_id[value].get("reviewer_friendly_question") or q_by_id[value]["question"]}'
@@ -72,12 +119,14 @@ st.caption(f'Original questionnaire wording: {question["question"]}')
 claim_col, guidance_col = st.columns([3, 2])
 with claim_col:
     st.markdown("**Claim to verify**")
-    st.info(question["claim"])
+    st.markdown(f'<div class="ps-claim-panel">{html.escape(question["claim"])}</div>', unsafe_allow_html=True)
 with guidance_col:
     st.markdown("**What good evidence looks like**")
     st.write(question.get("reviewer_hint", ""))
 
 mapped = [item for item in manifest if item["question_id"] == q_id]
+reviewed_for_claim = sum(item["evidence_id"] in latest_decision for item in mapped)
+st.caption(f"{reviewed_for_claim}/{len(mapped)} documents decided · review each document against the claim")
 e_id = st.selectbox(
     "Submitted evidence",
     [item["evidence_id"] for item in mapped],
@@ -89,6 +138,9 @@ e_id = st.selectbox(
 )
 
 evidence = next(item for item in mapped if item["evidence_id"] == e_id)
+previous_decision = latest_decision.get(e_id)
+if previous_decision:
+    st.info(f"Previous decision: {previous_decision.get('reviewer_label','')} by {previous_decision.get('reviewer','reviewer')} · {previous_decision.get('timestamp_utc','')}. Recording again appends a revision.")
 evidence_path = ROOT / evidence["path"]
 evidence_text = evidence_path.read_text(encoding="utf-8")
 
@@ -120,10 +172,15 @@ with left:
     st.text(evidence_text)
 
 with right:
-    st.subheader("AI recommendation")
-    st.caption("Advisory only. Verify the evidence and citation before deciding.")
+    st.subheader("Model advisory")
+    st.caption("Advisory only · reviewer makes the decision")
+    active_provider = os.getenv("PROOFSTACK_PROVIDER", "mock").strip().lower()
+    if active_provider == "mock":
+        st.info("Source: Local mock · deterministic heuristic, not an AI model")
+    else:
+        st.info(f"Source: configured AI provider · {active_provider}")
 
-    if st.button("Assess this evidence", type="primary", use_container_width=True):
+    if st.button("Assess this evidence", type="primary", width="stretch"):
         try:
             provider = get_provider()
             raw = provider.assess(question, evidence, evidence_text)
@@ -189,9 +246,9 @@ with right:
         st.caption("Run the assessment when you are ready to compare the claim with this evidence.")
 
 st.divider()
-st.subheader("Reviewer decision")
+st.subheader("Your decision for this document")
 st.caption(
-    "Your decision is authoritative. Use the model as a second opinion, not as an approval engine."
+    "Decide whether this document supports the claim. Revisions add a new record; earlier decisions remain in the log."
 )
 
 reviewer = st.text_input("Reviewer name")
@@ -211,7 +268,7 @@ if assessment and assessment.get("label") in LABELS:
     if reviewer_label != assessment["label"]:
         st.info("Your decision differs from the AI recommendation. Explain why in reviewer notes.")
 
-if st.button("Record final decision", use_container_width=True):
+if st.button("Record reviewer decision", width="stretch"):
     errors = reviewer_submission_errors(
         reviewer,
         reviewer_label,
@@ -241,9 +298,17 @@ if st.button("Record final decision", use_container_width=True):
 
         try:
             record_id = save_decision(row)
+            st.session_state["last_saved_case"] = f"{q_id}/{e_id}"
+            st.session_state["last_saved_at"] = row["timestamp_utc"]
             if record_id:
-                st.success(f"Decision recorded. Record ID: {record_id}")
+                st.success(f"Decision saved to the review log · Record {record_id}")
             else:
-                st.success("Decision recorded.")
+                st.success("Decision saved to the review log. Any later decision is recorded as a new entry.")
         except Exception as exc:
             st.error(str(exc))
+
+with st.expander("How to review this case", expanded=not st.session_state.get("review_guide_seen", False)):
+    st.markdown("**Start with the claim.** Check its scope, systems, people, and time period.")
+    st.markdown("**Inspect what the document demonstrates.** A policy describes intent; an operating record shows an event or current state.")
+    st.markdown("**Verify the citation, then decide.** A grounded excerpt can still be insufficient for the claim. Your recorded decision is authoritative.")
+    st.session_state["review_guide_seen"] = True

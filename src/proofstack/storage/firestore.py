@@ -16,3 +16,16 @@ def append_decision(row: dict):
 
     _, document_ref = client.collection(collection).add(record)
     return document_ref.id
+
+
+def read_decisions():
+    """Return reviewer records newest first for the in-app audit view."""
+    project = os.getenv("GCP_PROJECT_ID") or None
+    collection = os.getenv("FIRESTORE_COLLECTION", "proofstack_decisions").strip()
+    if not collection:
+        raise RuntimeError("FIRESTORE_COLLECTION must not be empty")
+    client = firestore.Client(project=project)
+    return [
+        {**snapshot.to_dict(), "record_id": snapshot.id}
+        for snapshot in client.collection(collection).order_by("timestamp_utc", direction=firestore.Query.DESCENDING).stream()
+    ]
