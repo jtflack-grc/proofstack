@@ -38,3 +38,14 @@ def append_decision(row: dict, path="local_decisions.csv"):
         if new:
             writer.writeheader()
         writer.writerow({key: row.get(key, "") for key in HEADER})
+
+
+def read_decisions(path="local_decisions.csv"):
+    target = Path(path)
+    if not target.exists():
+        return []
+    with target.open("r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        if reader.fieldnames != HEADER:
+            raise RuntimeError("Existing local decision log uses an older schema.")
+        return list(reader)
