@@ -29,14 +29,14 @@ A valid model label does not make the underlying rationale or citation trustwort
 
 Controls:
 - Vertex uses a response schema with a two-value label enum
-- parser ambiguity fails closed to UNPARSEABLE
+- parser ambiguity fails closed to UNPARSEABLE; a label word inside prose ("does not show the claim is SUPPORTED") or an invalid JSON label is never treated as a valid label
 - exact/whitespace-normalized citation grounding is checked independently
 - rationale is displayed as inert text and the citation as code
 - model/provider metadata is retained for evaluation
 
 ### Human decision is authoritative
 
-The reviewer makes the final SUPPORTED/UNSUPPORTED decision. When the reviewer overrides a valid model label, ProofStack requires a note to preserve the reason for disagreement.
+The reviewer makes the final SUPPORTED/UNSUPPORTED decision. No decision is pre-selected, and a decision cannot be recorded until the reviewer explicitly chooses one. When the reviewer overrides a valid model label, ProofStack requires a note to preserve the reason for disagreement.
 
 ## Primary threats and controls
 
@@ -123,6 +123,7 @@ Controls:
 - append-style local logging
 - Firestore server timestamps in cloud mode
 - reviewer identity required
+- explicit final decision required (no pre-selected default)
 - override note required
 - provider/model, rationale, cited excerpt and citation-valid flag retained
 
@@ -145,10 +146,12 @@ Automated tests cover:
 - role-hijack language
 - embedded and malformed model output
 - ambiguous SUPPORTED/UNSUPPORTED text
+- label words inside prose, including negation, and invalid JSON labels
 - hallucinated citation
 - oversized evidence
 - stale assessment context
 - reviewer missing identity
+- reviewer missing final decision
 - human override without explanation
 - provider configuration and malformed-response failure
 - Firestore configuration behavior
@@ -157,7 +160,7 @@ Automated tests cover:
 ## Deployment review
 
 Before final demo:
-- verify no secrets in repo/history
+- verify no secrets in repo/history (CI runs gitleaks over the full history on every push and pull request)
 - confirm IAM remains least privilege
 - verify synthetic-only dataset
 - run CI
