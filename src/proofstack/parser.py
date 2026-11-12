@@ -4,7 +4,12 @@ import re
 from proofstack import LABELS, UNPARSEABLE
 from proofstack.schema import ModelAssessment
 
-_LABEL_RE = re.compile(r"\b(SUPPORTED|UNSUPPORTED)\b", flags=re.I)
+# Non-JSON fallback accepts only an explicit label on its own line ("UNSUPPORTED",
+# "Label: SUPPORTED"). A label word inside prose is never used, because
+# "the evidence does not show the claim is SUPPORTED" must not become SUPPORTED.
+_LABEL_RE = re.compile(
+    r"^\W*(?:label\W*)?(SUPPORTED|UNSUPPORTED)\W*$", flags=re.I | re.M
+)
 _JSON_BLOCK_RE = re.compile(r"\{[^{}]*\}", flags=re.S)
 
 
@@ -26,6 +31,16 @@ def _assessment_from_obj(obj: dict, raw: str, parse_status: str):
     )
 
 
+def _invalid_label(raw: str) -> ModelAssessment:
+    """JSON with a label outside LABELS must not fall through to word matching."""
+    return ModelAssessment(
+        label=UNPARSEABLE,
+        rationale=raw[:500],
+        parse_status="invalid_label",
+        raw=raw,
+    )
+
+
 def parse_model_output(text: str) -> ModelAssessment:
     """Parse model output without silently converting ambiguity into a valid label."""
     raw = str(text or "").strip()
@@ -42,6 +57,8 @@ def parse_model_output(text: str) -> ModelAssessment:
             parsed = _assessment_from_obj(obj, raw, "json")
             if parsed:
                 return parsed
+            if "label" in obj:
+                return _invalid_label(raw)
     except json.JSONDecodeError:
         pass
 
@@ -59,6 +76,8 @@ def parse_model_output(text: str) -> ModelAssessment:
             parsed = _assessment_from_obj(obj, raw, "json_embedded")
             if parsed:
                 return parsed
+            if "label" in obj:
+                return _invalid_label(raw)
 
     labels = {_valid(value) for value in _LABEL_RE.findall(raw)}
     labels.discard(None)

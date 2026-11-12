@@ -50,3 +50,13 @@ def test_matching_decision_does_not_require_note():
         "",
         {"label": "SUPPORTED"},
     ) == []
+
+
+def test_missing_final_decision_is_rejected():
+    errors = reviewer_submission_errors("John", None, "", {"label": "SUPPORTED"})
+    assert "Choose a final decision." in errors
+
+
+def test_invalid_final_decision_is_rejected():
+    errors = reviewer_submission_errors("John", "MAYBE", "", None)
+    assert "Choose a final decision." in errors

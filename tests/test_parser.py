@@ -36,6 +36,36 @@ def test_ambiguous_is_unparseable():
     assert result.label == "UNPARSEABLE"
 
 
+def test_label_on_own_line_is_tolerated():
+    result = parse_model_output("Label: UNSUPPORTED\nThe export lists two accounts without MFA.")
+    assert result.label == "UNSUPPORTED"
+    assert result.parse_status == "label_regex"
+
+
+def test_label_word_inside_prose_is_unparseable():
+    # Negation: reading the label word out of this sentence would invert its meaning.
+    result = parse_model_output("The evidence does not show the claim is SUPPORTED.")
+    assert result.label == "UNPARSEABLE"
+
+
+def test_conflicting_label_lines_are_unparseable():
+    assert parse_model_output("SUPPORTED\nUNSUPPORTED").label == "UNPARSEABLE"
+
+
+def test_invalid_json_label_does_not_fall_back_to_prose():
+    result = parse_model_output(
+        '{"label":"APPROVED","rationale":"the claim is UNSUPPORTED by logs"}'
+    )
+    assert result.label == "UNPARSEABLE"
+    assert result.parse_status == "invalid_label"
+
+
+def test_invalid_embedded_json_label_does_not_fall_back_to_prose():
+    result = parse_model_output('Result: {"label":"COMPLIANT"} so it is SUPPORTED')
+    assert result.label == "UNPARSEABLE"
+    assert result.parse_status == "invalid_label"
+
+
 def test_empty_is_unparseable():
     result = parse_model_output("")
     assert result.label == "UNPARSEABLE"

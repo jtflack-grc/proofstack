@@ -235,6 +235,7 @@ reviewer = st.text_input("Reviewer name")
 reviewer_label = st.radio(
     "Final decision",
     list(LABELS),
+    index=None,
     horizontal=False,
     format_func=lambda value: DECISION_LABELS.get(value, value),
 )
@@ -245,7 +246,7 @@ notes = st.text_area(
 )
 
 if assessment and assessment.get("label") in LABELS:
-    if reviewer_label != assessment["label"]:
+    if reviewer_label and reviewer_label != assessment["label"]:
         st.info("Your decision differs from the AI recommendation. Explain why in reviewer notes.")
 
 if st.button("Record reviewer decision", width="stretch"):

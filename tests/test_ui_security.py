@@ -16,3 +16,9 @@ def test_model_rationale_is_rendered_as_plain_text():
 
 def test_app_does_not_enable_unsafe_html():
     assert "unsafe_allow_html=True" not in APP
+
+
+def test_final_decision_has_no_preselected_default():
+    start = APP.index('"Final decision"')
+    radio_call = APP[start:APP.index("\n)", start)]
+    assert "index=None" in radio_call
