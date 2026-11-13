@@ -36,6 +36,7 @@ Contributions included:
 ## Maimuna Chowdhury
 
 - Discussed and drafted security test ideas during team conversation.
+- Delivered security hardening for model-output parsing and reviewer decision integrity, including fail-closed handling for ambiguous/invalid labels, explicit reviewer decision selection, expanded regression tests, read-only CI permissions, full-history gitleaks scanning, and related security documentation updates.
 
 ## Ongoing attribution
 
