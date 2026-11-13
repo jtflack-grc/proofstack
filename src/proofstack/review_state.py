@@ -24,6 +24,8 @@ def reviewer_submission_errors(
 
     if not reviewer:
         errors.append("Reviewer name is required.")
+    if reviewer_label not in LABELS:
+        errors.append("Choose a final decision.")
 
     model_label = ""
     if isinstance(assessment, dict):

@@ -32,7 +32,7 @@ Residual risk: ProofStack does not implement a general user-level rate limiter. 
 | --- | --- |
 | A01 Broken Access Control | Cloud Run is private by default; runtime identity is separate from deployer identity. |
 | A02 Security Misconfiguration | deployment script defaults to private access and explicit environment configuration. |
-| A03 Software Supply Chain Failures | dependency ranges, CI, and Dependabot are used; production-grade SBOM/signing is outside MVP scope. |
+| A03 Software Supply Chain Failures | dependency ranges, CI, and Dependabot are used; CI runs with read-only repository permissions and scans Git history for secrets; production-grade SBOM/signing is outside MVP scope. |
 | A04 Cryptographic Failures | TLS is provided by Cloud Run; no application-managed cryptographic keys are introduced. |
 | A05 Injection | evidence is untrusted and model-directed injection is explicitly tested; the app has no SQL or shell execution path from reviewer input. |
 | A06 Insecure Design | trust boundaries, human authority, fail-closed behavior, and least privilege are design requirements. |
@@ -53,6 +53,8 @@ Residual risk: ProofStack does not implement a general user-level rate limiter. 
 8. Changing question/evidence must invalidate stale assessment state.
 9. A reviewer override must require an explanation.
 10. Missing provider configuration or empty provider output must fail visibly.
+11. A label word inside prose (for example "does not show the claim is SUPPORTED") or an invalid JSON label must become UNPARSEABLE, not a valid label.
+12. A reviewer decision must not be recorded until the reviewer explicitly chooses SUPPORTED or UNSUPPORTED.
 
 ## Live adversarial check
 
