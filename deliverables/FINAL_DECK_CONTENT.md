@@ -64,7 +64,7 @@ The model cannot approve, certify, change permissions or execute evidence instru
 
 Architecture:
 
-`Streamlit UI → Vertex AI / Gemini 3.8 Flash → strict parser + citation check → human reviewer → Firestore`
+`Streamlit UI → Vertex AI / Gemini 3.8 Flash OR NVIDIA NIM → strict parser + citation check → human reviewer → Firestore`
 
 Cloud boundary:
 
@@ -163,6 +163,7 @@ What ships:
 
 - working Cloud Run app
 - Vertex + Firestore integration
+- verified NVIDIA NIM advisory path (`nvidia/nemotron-3.5-bolt-e4b`)
 - frozen gold set + evaluation results
 - OWASP/NIST security mapping
 - research paper + project brief
