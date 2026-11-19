@@ -8,7 +8,7 @@ ProofStack is a human-in-the-loop evidence-review capstone built for the questio
 
 > **Does the submitted evidence actually prove the claim?**
 
-The MVP contains **10 security questions** and **20 synthetic evidence documents**. Vertex AI provides an advisory assessment, citations are independently grounded against the submitted evidence, and a human reviewer remains the final authority.
+The MVP contains **10 security questions** and **20 synthetic evidence documents**. ProofStack supports advisory assessment through either Vertex AI or NVIDIA NIM, citations are independently grounded against the submitted evidence, and a human reviewer remains the final authority.
 
 ## Verified result
 
@@ -49,7 +49,7 @@ ProofStack does **not** certify compliance, invent missing controls, or replace 
 
 ![ProofStack architecture](docs/images/proofstack-architecture.svg)
 
-The application runs on **Cloud Run**, uses **Vertex AI** for advisory model assessment, and persists reviewer decisions in **Firestore**. The runtime uses a dedicated service identity rather than downloaded service-account keys.
+The application runs on **Cloud Run** and persists reviewer decisions in **Firestore**. Advisory model assessment can be provided by **Vertex AI / Gemini** or **NVIDIA NIM** through the same strict parsing and citation-grounding path. The runtime uses a dedicated Google Cloud service identity rather than downloaded service-account keys.
 
 ## Evidence design
 
@@ -145,6 +145,27 @@ streamlit run app.py
 
 The default provider is `mock`, so local development does not require cloud credentials.
 
+## NVIDIA NIM integration
+
+NVIDIA NIM integration was verified locally on November 19, 2026 using `nvidia/nemotron-3.5-bolt-e4b`. The live ProofStack UI returned JSON-parsed advisory output with:
+
+- provider: `nvidia`
+- model: `nvidia/nemotron-3.5-bolt-e4b`
+- the same fail-closed parser and citation-grounding checks used by the rest of the application
+
+The frozen 20-case evaluation and published 95.0% accuracy result remain tied to `gemini-3.8-flash` on Vertex AI; the NVIDIA verification demonstrates product integration and is not a replacement evaluation.
+
+To reproduce locally, obtain an NVIDIA API key and set it only in the runtime environment:
+
+```text
+PROOFSTACK_PROVIDER=nvidia
+NVIDIA_API_BASE=https://integrate.api.nvidia.com/v1
+NVIDIA_API_KEY=<runtime secret; never commit>
+NVIDIA_MODEL=nvidia/nemotron-3.5-bolt-e4b
+```
+
+Then run `python scripts/check_nvidia.py` and launch ProofStack normally.
+
 ## Vertex / Google Cloud configuration
 
 Verified final configuration:
@@ -187,9 +208,9 @@ See [CONTRIBUTIONS.md](deliverables/CONTRIBUTIONS.md).
 
 ## Verified vs. not claimed
 
-**Verified:** Cloud Run, Vertex AI, Firestore persistence, frozen human labels, final metrics, citation grounding, adversarial probes, CI.
+**Verified:** Cloud Run, Vertex AI, Firestore persistence, NVIDIA NIM advisory integration, frozen human labels, final metrics, citation grounding, adversarial probes, CI.
 
-**Not claimed:** compliance certification, production readiness, generalized accuracy, NVIDIA integration, or external-hackathon participation.
+**Not claimed:** compliance certification, production readiness, generalized accuracy, NVIDIA evaluation parity with the frozen Vertex run, or external-hackathon participation.
 
 ## Project status
 
