@@ -31,7 +31,7 @@ The MVP contains 10 security questions and 20 synthetic evidence documents. Each
 
 ## Architecture and controls
 
-ProofStack runs as a Streamlit application on Google Cloud Run. Gemini 3.8 Flash is called through Vertex AI. Reviewer decisions are stored in Firestore. A dedicated runtime service identity is used instead of downloaded service-account keys.
+ProofStack runs as a Streamlit application on Google Cloud Run, with reviewer decisions stored in Firestore. Gemini 3.8 Flash through Vertex AI was used for the frozen evaluation. The product also supports NVIDIA NIM as an alternate advisory provider; that integration was verified with `nvidia/nemotron-3.5-bolt-e4b` on November 19, 2026. Both providers feed the same fail-closed parser, citation check, and human-review workflow. A dedicated Google Cloud runtime service identity is used instead of downloaded service-account keys.
 
 Evidence is treated as untrusted input. The application separates evidence from system instructions, limits evidence size, warns on instruction-like text, requests structured model output, fails closed on ambiguous labels, verifies cited excerpts against evidence, and renders untrusted evidence and model rationale as inert text. The model has no tools and no approval authority.
 
@@ -58,9 +58,9 @@ Limitations include synthetic evidence, only 20 evaluation cases, binary labels,
 ## Contribution record
 
 - **John Flack:** project lead; contingency architecture; Streamlit workflow; Google Cloud / Vertex / Firestore integration; security hardening; adversarial tests; gold labeling; evaluation; error analysis; documentation and final integration.
-- **Hans Rony:** participated in early product/UI discussions; no repository contribution was available on the final branch at packaging time.
-- **Kristan Mack:** contributed reviewer-language discussion/questions; no repository contribution was available on the final branch at packaging time.
-- **Maimuna Chowdhury:** discussed/drafted security test ideas; no repository contribution was available on the final branch at packaging time.
+- **Hans Rony:** reviewer-workflow and readability improvements, including review queue, decision history, prior-decision visibility, reviewer guidance, theme configuration, and decision-log read support.
+- **Kristan Mack:** reviewer-language discussion and questions that informed the review workflow and wording.
+- **Maimuna Chowdhury:** security hardening for parser ambiguity, reviewer-decision integrity, regression tests, read-only CI permissions, full-history secret scanning, and security documentation.
 
 ## Final takeaway
 
