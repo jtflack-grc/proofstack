@@ -2,7 +2,7 @@
 
 ## Delivery assumption
 
-The verified final build uses Google Cloud as the primary platform path and Vertex AI / Gemini as the live model provider. NVIDIA remains optional and is not part of the final delivery story.
+The verified final build uses Google Cloud as the primary hosting and persistence path. Vertex AI / Gemini remains the provider used for the frozen 20-case evaluation, and NVIDIA NIM is now a verified alternate advisory provider for the product demo.
 
 ## Live cloud verification completed — November 6, 2026
 
@@ -30,7 +30,7 @@ The currently deployed Cloud Run revision predates the final UX/security/evaluat
 - inert rendering for untrusted evidence and model rationale
 - deterministic mock provider
 - Vertex AI / Gemini provider using Application Default Credentials
-- optional NVIDIA provider retained but not required
+- verified NVIDIA NIM advisory provider (`nvidia/nemotron-3.5-bolt-e4b`) using the same parser and citation-grounding path
 - structured Vertex output schema
 - citation grounding checks
 - expanded instruction-like evidence detection
@@ -92,11 +92,17 @@ Gemini cited real Q3 backup/restore evidence but incorrectly treated it as suffi
 3. Perform one short smoke/demo check; do not rerun the final 20-case evaluation.
 4. Submit/present the packaged artifacts using the exact MMC portal fields when they are available.
 
+## NVIDIA verification completed — November 19, 2026
+
+- NVIDIA hosted API credential verified against `https://integrate.api.nvidia.com/v1`
+- 32 models visible to the credential
+- ProofStack run verified with `nvidia/nemotron-3.5-bolt-e4b`
+- parse status returned `json`
+- provider metadata returned `nvidia`
+- model metadata returned `nvidia/nemotron-3.5-bolt-e4b`
+- frozen Vertex evaluation was not rerun or altered
+
 ## Optional only
 
-- NVIDIA event/API access
-- NVIDIA smoke test
 - external hackathon participation
 - larger dataset or additional model experiments
-
-None of these are required to complete the current contingency delivery.
