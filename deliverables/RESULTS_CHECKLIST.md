@@ -27,7 +27,8 @@
 - [x] private access choice intentional
 - [x] no downloaded service-account key used
 - [x] synthetic-only evidence used
-- [ ] redeploy the final hardened branch revision before the recorded/live demo
+- [x] final hardened branch redeployed as `proofstack-00002-p7s`
+- [x] post-deploy smoke check completed
 
 ## Security
 - [x] prompt-injection boundary implemented
@@ -69,3 +70,12 @@
 - [x] no production-readiness claim
 - [x] NVIDIA integration claim limited to verified live advisory path; frozen metrics remain attributed to Vertex
 - [x] no external-hackathon claim
+
+## MMC submission
+- [x] Showcase repository identified: `Mentor-Me-Collective/google-cloud-launchpad-showcase`
+- [x] Team GitHub usernames submitted in `#mmc-build`
+- [ ] Contributor access granted
+- [ ] `team/proofstack` branch pushed
+- [ ] PR to `main` opened and intentionally left unmerged
+- [ ] final walkthrough recorded/uploaded
+- [ ] final MMC submission completed
