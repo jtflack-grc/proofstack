@@ -4,9 +4,9 @@ ProofStack intentionally uses a small Google Cloud footprint:
 
 - **Cloud Run** — reviewer application
 - **Firestore** — reviewer decision log
-- **Vertex AI / Gemini** — primary live model provider
+- **Vertex AI / Gemini** — primary live model provider and frozen evaluation provider
 
-The repository also contains an optional NVIDIA adapter. The contingency deployment does not depend on it.
+The repository also contains a verified NVIDIA NIM advisory path. The production-style contingency deployment remains Google Cloud based; the NVIDIA path is used to demonstrate the required alternate advisory integration without changing the frozen Vertex evaluation.
 
 Cloud Storage is unnecessary for the MVP because the synthetic evidence is packaged with the application.
 
@@ -139,8 +139,10 @@ Minimum verification:
 8. A reviewer decision is persisted to Firestore.
 9. No credential is present in the repository, UI, logs or screenshots.
 
-## Optional NVIDIA adapter
+## Verified NVIDIA NIM advisory path
 
-The NVIDIA provider remains available for experimentation if independent credentials later become available. It is not part of the contingency definition of done.
+NVIDIA NIM integration was verified on November 19, 2026 using `nvidia/nemotron-3.5-bolt-e4b` through `https://integrate.api.nvidia.com/v1`. The ProofStack UI returned JSON-parsed advisory output with provider/model provenance visible and the same parser and citation-grounding controls used elsewhere in the application.
 
-Do not claim NVIDIA integration or hackathon participation unless either actually occurred.
+The NVIDIA path is an integration proof, not a replacement evaluation. The frozen 20-case metrics remain the Vertex AI / Gemini 3.8 Flash results.
+
+Keep NVIDIA credentials in runtime environment variables only and never commit the API key.
