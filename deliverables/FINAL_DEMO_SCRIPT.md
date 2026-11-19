@@ -14,11 +14,11 @@ For the BUILD capstone, the SDG 1 connection is modest: smaller organizations an
 
 ## Slide 3 / 1:00–1:35
 
-The reviewer selects a question and evidence item, reads the source, and asks Gemini for an advisory assessment. The model returns SUPPORTED or UNSUPPORTED, a short rationale, and an exact cited excerpt. ProofStack then independently checks that the citation actually exists in the evidence. The reviewer can accept or override the model, and an override requires an explanation.
+The reviewer selects a question and evidence item, reads the source, and asks the configured provider for an advisory assessment. The frozen evaluation used Gemini through Vertex AI, and the product also supports a verified NVIDIA NIM advisory path. The model returns SUPPORTED or UNSUPPORTED, a short rationale, and an exact cited excerpt. ProofStack then independently checks that the citation actually exists in the evidence. The reviewer can accept or override the model, and an override requires an explanation.
 
 ## Slide 4 / 1:35–2:05
 
-The architecture is intentionally small: Streamlit on Cloud Run, Gemini 3.8 Flash through Vertex AI, a strict parser and citation-grounding check, a human decision, and Firestore for the decision record. The runtime uses a dedicated service identity. The model has no tools and no approval authority.
+The architecture is intentionally small: Streamlit on Cloud Run, either Gemini 3.8 Flash through Vertex AI or NVIDIA NIM for the advisory, a strict parser and citation-grounding check, a human decision, and Firestore for the decision record. The NVIDIA path was verified with `nvidia/nemotron-3.5-bolt-e4b`; the published 95 percent evaluation remains the frozen Vertex result. The runtime uses a dedicated service identity. The model has no tools and no approval authority.
 
 ## Slide 5 / 2:05–2:40
 
@@ -62,4 +62,5 @@ Before recording or presenting:
 - hide account notifications and bookmarks
 - never expose credentials
 - do not rerun the final 20-case evaluation
-- do not claim NVIDIA integration or hackathon participation
+- demonstrate NVIDIA integration only with the verified NIM provider path; do not imply NVIDIA produced the frozen 20-case metrics
+- do not claim external hackathon participation
