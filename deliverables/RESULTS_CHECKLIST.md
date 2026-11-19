@@ -13,6 +13,14 @@
 - [x] structured Vertex smoke test passed
 - [x] final 20-case model run completed
 
+## NVIDIA NIM
+- [x] NVIDIA API credential verified without committing the key
+- [x] hosted model inventory queried successfully
+- [x] ProofStack advisory verified with `nvidia/nemotron-3.5-bolt-e4b`
+- [x] parse status verified as JSON
+- [x] provider/model provenance visible in the UI
+- [x] frozen Vertex evaluation left unchanged
+
 ## Google Cloud
 - [x] Cloud Run deployment verified
 - [x] Firestore persistence verified
@@ -59,4 +67,5 @@
 - [x] limitations are explicit
 - [x] no compliance/certification claim
 - [x] no production-readiness claim
-- [x] no NVIDIA/hackathon claim
+- [x] NVIDIA integration claim limited to verified live advisory path; frozen metrics remain attributed to Vertex
+- [x] no external-hackathon claim
