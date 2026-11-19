@@ -4,7 +4,7 @@
 
 The verified final build uses Google Cloud as the primary hosting and persistence path. Vertex AI / Gemini remains the provider used for the frozen 20-case evaluation, and NVIDIA NIM is now a verified alternate advisory provider for the product demo.
 
-## Live cloud verification completed — November 6, 2026
+## Live cloud verification completed — November 19, 2026
 
 - Google Cloud project: `proofstack-build`
 - Vertex model: `gemini-3.8-flash`
@@ -12,12 +12,12 @@ The verified final build uses Google Cloud as the primary hosting and persistenc
 - citation grounding in live smoke test: PASS
 - Firestore synthetic write/read/delete smoke test: PASS
 - Cloud Run service `proofstack` deployed privately in `us-east1`
-- deployed revision `proofstack-00001-j2w` served 100% of traffic at the first vertical-slice check
-- Cloud Run returned HTTP 200 through the authenticated proxy
-- Streamlit UI was exercised against live Vertex + Firestore
-- reviewer decision persistence was verified
+- final deployed revision `proofstack-00002-p7s` serving 100% of traffic
+- final hardened repository revision redeployed successfully
+- Cloud Run application smoke-tested after redeploy
+- reviewer decision persistence verified
 
-The currently deployed Cloud Run revision predates the final UX/security/evaluation packaging commits. One final application redeploy is required before the recorded/live demo. No additional cloud architecture work is needed.
+No additional cloud architecture or model-evaluation work is required.
 
 ## Ready in repository
 
@@ -84,13 +84,14 @@ Gemini cited real Q3 backup/restore evidence but incorrectly treated it as suffi
 - `deliverables/FINAL_DEMO_SCRIPT.md`
 - `deliverables/CONTRIBUTIONS.md`
 - `deliverables/RESULTS_CHECKLIST.md`
+- `deliverables/FINAL_SUBMISSION_CHECKLIST.md`
 
 ## Remaining action
 
-1. Pull the final branch in Cloud Shell.
-2. Redeploy the final hardened revision to the existing private Cloud Run service.
-3. Perform one short smoke/demo check; do not rerun the final 20-case evaluation.
-4. Submit/present the packaged artifacts using the exact MMC portal fields when they are available.
+1. Wait for contributor access to `Mentor-Me-Collective/google-cloud-launchpad-showcase`.
+2. Push the project on `team/proofstack` and open the required PR to `main`; leave the PR open.
+3. Record/upload the final walkthrough.
+4. Submit the final artifacts through the MMC submission channel/portal.
 
 ## NVIDIA verification completed — November 19, 2026
 
