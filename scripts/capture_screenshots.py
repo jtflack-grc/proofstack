@@ -18,8 +18,9 @@ with sync_playwright() as p:
 
     # Run the deterministic local advisory on the default synthetic evidence case.
     page.get_by_role("button", name="Assess this evidence").click()
-    page.get_by_text("AI assessment:", exact=False).wait_for(timeout=30000)
+    page.get_by_text("Citation check passed:", exact=False).wait_for(timeout=30000)
+    page.get_by_text("Why the model reached that recommendation", exact=True).scroll_into_view_if_needed()
     time.sleep(1)
 
-    page.screenshot(path=str(OUT / "proofstack-advisory-grounding.png"), full_page=True)
+    page.screenshot(path=str(OUT / "proofstack-advisory-grounding.png"), full_page=False)
     browser.close()
