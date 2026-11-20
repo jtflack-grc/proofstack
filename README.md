@@ -59,6 +59,8 @@ The reviewer sees the claim, evidence guidance, submitted artifact, and advisory
 
 The advisory view shows the model recommendation, rationale, exact cited excerpt, and an independent citation-grounding check before the human decision.
 
+These screenshots were captured with ProofStack's deterministic local mock provider so the UI documentation is reproducible and contains no cloud credentials. Live Vertex AI/Gemini and NVIDIA NIM integration are verified separately below and in the deployment/evaluation records.
+
 ## Architecture
 
 ![ProofStack architecture](docs/images/proofstack-architecture.svg)
