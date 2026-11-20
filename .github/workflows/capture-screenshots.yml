@@ -1,4 +1,4 @@
-name: Capture ProofStack screenshots
+name: Capture ProofStack screenshots # final framing
 
 on:
   push:
